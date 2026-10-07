@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@200;300;700;900&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body class="is-loading">
 
@@ -20,54 +20,56 @@
     <div class="ld-top"><span class="ld-brand">L' CLAV</span><span class="ld-meta">MIAMI · FL</span></div>
     <div class="ld-count"><span id="ldNum">000</span><i>%</i></div>
     <div class="ld-bar"><span id="ldBar"></span></div>
-    <p class="ld-tip"><b>TIP</b> <span id="ldTip">Toca los percheros para ver los tops.</span></p>
+    <p class="ld-tip"><b>TIP</b> <span id="ldTip"></span></p>
   </div>
 
   <!-- ============ NAV ============ -->
   <header id="nav">
-    <a class="nv-brand" href="#" data-go="top" aria-label="L' Clav, volver a la puerta">
+    <a class="nv-brand" href="#" data-go="top" data-i18n-aria="nav.home">
       <span class="nv-mark">L'</span><span class="nv-name">CLAV</span>
-      <span class="nv-sub">Miami · Solo con cita</span>
+      <span class="nv-sub" data-i18n="nav.sub"></span>
     </a>
-    <nav class="nv-links" aria-label="Tienda">
-      <button data-open="tops"><i>01</i>Tops</button>
-      <button data-open="bottoms"><i>02</i>Bottoms</button>
-      <button data-open="especiales"><i>03</i>Piezas</button>
-      <button data-open="cita"><i>04</i>Cita</button>
+    <nav class="nv-links" data-i18n-aria="nav.shop">
+      <button data-open="tops"><i>01</i><span data-i18n="nav.tops"></span></button>
+      <button data-open="bottoms"><i>02</i><span data-i18n="nav.bottoms"></span></button>
+      <button data-open="especiales"><i>03</i><span data-i18n="nav.pieces"></span></button>
+      <button data-open="cita"><i>04</i><span data-i18n="nav.book"></span></button>
     </nav>
     <div class="nv-right">
-      <button class="nv-bag" data-bag aria-label="Bolsa de apartados">
+      <button class="nv-lang" data-lang data-i18n-aria="lang.switchLabel"><span data-i18n="lang.switch"></span></button>
+      <button class="nv-bag" data-bag data-i18n-aria="nav.bag">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
         <i class="bag-n" hidden>0</i>
       </button>
       <button id="menuBtn" class="nv-menu" aria-haspopup="true" aria-expanded="false" aria-controls="menu">MENU <span class="caret">▾</span></button>
       <div id="menu" class="menu" hidden>
-        <p class="mn-h">Tienda</p>
-        <button data-open="tops"><span>Tops</span><kbd>T</kbd></button>
-        <button data-open="bottoms"><span>Bottoms</span><kbd>B</kbd></button>
-        <button data-open="especiales"><span>Piezas especiales</span><kbd>P</kbd></button>
-        <button data-bag><span>Mi bolsa</span><kbd>·</kbd></button>
-        <p class="mn-h">Contacto</p>
-        <button data-open="cita"><span>Agendar cita</span><kbd>C</kbd></button>
-        <button data-open="pedido"><span>Pedido especial · mensaje</span><kbd>M</kbd></button>
-        <p class="mn-h">Extra</p>
-        <button data-open="billar"><span>Jugar billar</span><kbd>8</kbd></button>
-        <button data-go="top"><span>Volver a la puerta</span><kbd>⇧</kbd></button>
+        <p class="mn-h" data-i18n="menu.shop"></p>
+        <button data-open="tops"><span data-i18n="nav.tops"></span><kbd>T</kbd></button>
+        <button data-open="bottoms"><span data-i18n="nav.bottoms"></span><kbd>B</kbd></button>
+        <button data-open="especiales"><span data-i18n="menu.special"></span><kbd>P</kbd></button>
+        <button data-bag><span data-i18n="menu.bag"></span><kbd>·</kbd></button>
+        <p class="mn-h" data-i18n="menu.contact"></p>
+        <button data-open="cita"><span data-i18n="menu.book"></span><kbd>C</kbd></button>
+        <button data-open="pedido"><span data-i18n="menu.request"></span><kbd>M</kbd></button>
+        <p class="mn-h" data-i18n="menu.extra"></p>
+        <button data-open="billar"><span data-i18n="menu.pool"></span><kbd>8</kbd></button>
+        <button data-go="top"><span data-i18n="menu.door"></span><kbd>⇧</kbd></button>
+        <button data-lang class="mn-lang"><span data-i18n="lang.switchLabel"></span><kbd data-i18n="lang.switch"></kbd></button>
       </div>
     </div>
   </header>
 
   <!-- ============ INTRO: door → hallway → room ============ -->
-  <section id="intro" aria-label="Entrada">
+  <section id="intro" data-i18n-aria="intro">
     <div class="pin">
       <canvas id="seq" aria-hidden="true"></canvas>
 
-      <div id="room" aria-label="El cuarto de L' Clav">
+      <div id="room" data-i18n-aria="room">
         <div class="room-cam">
           <div class="room-pan">
             <!-- poster = the loop's first frame; the loop is full-frame, every clip held in one image space; neon is CSS -->
             <div class="room-stage">
-              <img id="roomPoster" class="stage-fill" src="assets/room.webp" alt="Nily sentada en la esquina de L' Clav, con la ropa a la derecha">
+              <img id="roomPoster" class="stage-fill" src="assets/room.webp" data-i18n-alt="room.alt" alt="">
               <video class="stage-fill room-loop" muted playsinline preload="none" aria-hidden="true"></video>
               <video class="stage-fill room-loop" muted playsinline preload="none" aria-hidden="true"></video>
               <div class="neon" aria-hidden="true">
@@ -89,16 +91,16 @@
 
       <div id="hero" class="hero">
         <h1 class="hero-title" aria-label="L' Clav"><span class="ht-l">L'</span><span class="ht-r">CLAV</span></h1>
-        <div class="hero-left">
-          <p class="eyebrow">Miami · Ropa curada</p>
-          <p class="hero-copy">Toca la puerta.<br>Te estábamos esperando.</p>
+        <!-- the knock button sits on the door itself (placed by app.js from the door's position in the frame) -->
+        <div class="knock-wrap">
+          <button id="enterBtn" class="knock" disabled data-i18n-aria="hero.label">
+            <span class="knock-ring" aria-hidden="true"></span>
+            <span class="knock-txt" data-i18n="hero.knock"></span>
+          </button>
+          <span class="knock-label" data-i18n="hero.label"></span>
         </div>
-        <div class="hero-cta">
-          <button id="enterBtn" class="btn-enter" disabled><span class="be-key">ENTER</span><span class="be-arrow">→</span></button>
-          <p class="scroll-hint"><span class="mouse"></span>o haz scroll</p>
-        </div>
+        <p class="scroll-hint"><span class="mouse"></span><span data-i18n="hero.scroll"></span></p>
       </div>
-
 
       <!-- in-room HUD: desktop shows GTA prompts + keys; phones get the explora section below the room -->
       <div id="hud" aria-live="polite">
@@ -108,73 +110,73 @@
           <div id="dlOpts" class="dl-opts"></div>
         </div>
         <div class="hud-keys">
-          <span><kbd>T</kbd>Tops</span><span><kbd>B</kbd>Bottoms</span><span><kbd>E</kbd>Hablar</span><span><kbd>C</kbd>Cita</span>
+          <span><kbd>T</kbd><span data-i18n="nav.tops"></span></span><span><kbd>B</kbd><span data-i18n="nav.bottoms"></span></span><span><kbd>E</kbd><span data-i18n="keys.talk"></span></span><span><kbd>C</kbd><span data-i18n="keys.book"></span></span>
         </div>
       </div>
 
-      <div class="room-hint" aria-hidden="true"><span>Toca la ropa</span><i>↓ desliza para más</i></div>
+      <div class="room-hint" aria-hidden="true"><span data-i18n="room.hint"></span><i data-i18n="room.hint2"></i></div>
     </div>
   </section>
 
   <!-- ============ EXPLORA (phones: the room's menu, right after the full-screen room) ============ -->
   <section id="explora" class="explora">
-    <div id="ctrl" class="ctrl" aria-label="Qué quieres ver">
-        <p class="ctrl-line"><b>Nily</b><span id="ctrlLine">Hey, bienvenid@ a L' Clav. Toca la ropa o escoge aquí.</span></p>
-        <div class="ctrl-grid">
-          <button data-open="tops"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 8 32 14 42 8 56 16 50 28 44 25V56H20V25L14 28 8 16Z"/></svg>Tops</button>
-          <button data-open="bottoms"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 6H46L50 58H37L32 24 27 58H14Z"/></svg>Bottoms</button>
-          <button data-open="especiales"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 39 24 58 25 43 37 48 56 32 45 16 56 21 37 6 25 25 24Z"/></svg>Piezas</button>
-          <button data-open="cita"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="14" width="44" height="40" rx="6"/><path d="M10 26h44M22 8v12M42 8v12"/></svg>Cita</button>
-        </div>
-        <button class="ctrl-more" data-open="pedido">¿Buscas algo específico? <u>Pídeselo a Nily</u></button>
+    <div id="ctrl" class="ctrl" data-i18n-aria="ctrl.label">
+      <p class="ctrl-line"><b>Nily</b><span id="ctrlLine" data-i18n="ctrl.line"></span></p>
+      <div class="ctrl-grid">
+        <button data-open="tops"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 8 32 14 42 8 56 16 50 28 44 25V56H20V25L14 28 8 16Z"/></svg><span data-i18n="nav.tops"></span></button>
+        <button data-open="bottoms"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M18 6H46L50 58H37L32 24 27 58H14Z"/></svg><span data-i18n="nav.bottoms"></span></button>
+        <button data-open="especiales"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 6 39 24 58 25 43 37 48 56 32 45 16 56 21 37 6 25 25 24Z"/></svg><span data-i18n="ctrl.pieces"></span></button>
+        <button data-open="cita"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="10" y="14" width="44" height="40" rx="6"/><path d="M10 26h44M22 8v12M42 8v12"/></svg><span data-i18n="ctrl.book"></span></button>
       </div>
+      <button class="ctrl-more" data-open="pedido" data-i18n-html="ctrl.more"></button>
+    </div>
   </section>
 
   <!-- ============ NILY ============ -->
   <section id="nily" class="sec">
-    <div class="sec-head"><i>04</i><span>La dueña</span></div>
+    <div class="sec-head"><i>04</i><span data-i18n="nily.head"></span></div>
     <div class="nily-grid">
-      <div class="nily-sheet reveal"><img src="assets/nily_sheet.webp" alt="Hoja de personaje de Nily: frente, tres cuartos, perfil, espalda y cara" loading="lazy"></div>
+      <div class="nily-sheet reveal"><img src="assets/nily_sheet.webp" data-i18n-alt="nily.alt" alt="" loading="lazy"></div>
       <div class="nily-copy reveal">
         <h2 class="big">NILY</h2>
-        <p class="role">Dueña · Estilista · L' Clav</p>
-        <p class="lead">Escoge contigo, te arma el outfit y si no está en el rack, te lo consigue.</p>
-        <div class="actions"><button class="btn" data-open="cita">AGENDAR CITA</button><button class="btn ghost" data-open="pedido">Pedido especial</button></div>
+        <p class="role" data-i18n="nily.role"></p>
+        <p class="lead" data-i18n="nily.lead"></p>
+        <div class="actions"><button class="btn" data-open="cita" data-i18n="btn.book"></button><button class="btn ghost" data-open="pedido" data-i18n="btn.request"></button></div>
       </div>
     </div>
   </section>
 
   <section id="how" class="sec">
-    <div class="sec-head"><i>05</i><span>Cómo funciona</span></div>
+    <div class="sec-head"><i>05</i><span data-i18n="how.head"></span></div>
     <ol class="steps">
-      <li class="reveal"><b>01</b><h3>Escoge</h3><p>Mira tops, bottoms y piezas especiales y aparta lo que te guste.</p></li>
-      <li class="reveal"><b>02</b><h3>Agenda</h3><p>Escoge día y hora. Nily te confirma por mensaje.</p></li>
-      <li class="reveal"><b>03</b><h3>Pruébatelo</h3><p>Ven al cuarto, pruébate todo y llévate tu outfit.</p></li>
+      <li class="reveal"><b>01</b><h3 data-i18n="how.1h"></h3><p data-i18n="how.1p"></p></li>
+      <li class="reveal"><b>02</b><h3 data-i18n="how.2h"></h3><p data-i18n="how.2p"></p></li>
+      <li class="reveal"><b>03</b><h3 data-i18n="how.3h"></h3><p data-i18n="how.3p"></p></li>
     </ol>
   </section>
 
   <section id="cta" class="sec cta">
     <p class="eyebrow">L' Clav · Miami</p>
-    <h2 class="huge reveal">TE ESPERAMOS<br>EN EL CUARTO</h2>
-    <div class="actions center"><button class="btn" data-open="cita">AGENDAR CITA</button><button class="btn ghost" data-go="top">Volver a la puerta ↑</button></div>
+    <h2 class="huge reveal" data-i18n-html="cta.huge"></h2>
+    <div class="actions center"><button class="btn" data-open="cita" data-i18n="btn.book"></button><button class="btn ghost" data-go="top" data-i18n="btn.door"></button></div>
   </section>
-  <footer id="foot"><span>© L' Clav · Miami</span><span id="footLinks"></span><span>Hecho por DGO Enterprises</span></footer>
+  <footer id="foot"><span>© L' Clav · Miami</span><span id="footLinks"></span><span data-i18n="foot.made"></span></footer>
 
   <!-- ============ STORE ============ -->
   <div id="store" class="store" hidden>
     <div class="st-panel" role="dialog" aria-modal="true" aria-labelledby="stTitle">
       <header class="st-head">
-        <button class="st-back" data-back aria-label="Volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <div class="st-titles"><span class="st-brand">L' CLAV · Tienda</span><h2 id="stTitle">Tops</h2></div>
-        <button class="st-bag" data-bag aria-label="Bolsa de apartados">
+        <button class="st-back" data-back data-i18n-aria="back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="st-titles"><span class="st-brand" data-i18n="store.brand"></span><h2 id="stTitle"></h2></div>
+        <button class="st-bag" data-bag data-i18n-aria="nav.bag">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
           <i class="bag-n" hidden>0</i>
         </button>
       </header>
-      <div class="st-tabs" role="tablist" aria-label="Categorías">
-        <button role="tab" data-cat="tops">Tops</button>
-        <button role="tab" data-cat="bottoms">Bottoms</button>
-        <button role="tab" data-cat="especiales">Piezas especiales</button>
+      <div class="st-tabs" role="tablist" data-i18n-aria="store.cats">
+        <button role="tab" data-cat="tops" data-i18n="cat.tops"></button>
+        <button role="tab" data-cat="bottoms" data-i18n="cat.bottoms"></button>
+        <button role="tab" data-cat="especiales" data-i18n="cat.especiales"></button>
       </div>
       <div class="st-scroll" id="stScroll">
         <div id="stList"></div>
@@ -188,7 +190,7 @@
     <div class="sheet-bd" data-back></div>
     <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="bagTitle">
       <div class="sheet-grip" aria-hidden="true"></div>
-      <header class="sheet-head"><h2 id="bagTitle">Tu bolsa</h2><button class="sheet-x" data-back aria-label="Cerrar">✕</button></header>
+      <header class="sheet-head"><h2 id="bagTitle" data-i18n="bag.title"></h2><button class="sheet-x" data-back data-i18n-aria="close">✕</button></header>
       <div id="bagBody" class="sheet-body"></div>
     </div>
   </div>
@@ -198,7 +200,7 @@
     <div class="ph-backdrop" data-back></div>
     <div class="ph-device" role="dialog" aria-modal="true" aria-labelledby="phTitle">
       <div class="ph-status"><span id="phClock">9:41</span><span class="ph-notch"></span><span>5G ▮▮▮</span></div>
-      <div class="ph-head"><button class="ph-back" data-back aria-label="Cerrar">‹</button><h2 id="phTitle"></h2></div>
+      <div class="ph-head"><button class="ph-back" data-back data-i18n-aria="close">‹</button><h2 id="phTitle"></h2></div>
       <div id="phBody" class="ph-body"></div>
     </div>
   </div>
@@ -219,7 +221,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/i18n.js?v=7"></script>
+  <script>I18N.apply();</script>
+  <script src="js/config.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 </html>

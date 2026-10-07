@@ -1,6 +1,10 @@
 (() => {
   "use strict";
   const C = window.LCLAV;
+  const t = (k, v) => I18N.t(k, v);
+  const pn = (p) => (I18N.lang === "en" && p.name_en) || p.name;      // product name / description in the current language
+  const ptag = (p) => (I18N.lang === "en" && p.tag_en) || p.tag;
+  const pd = (p) => (I18N.lang === "en" ? p.desc_en : p.desc) || t("desc.default");
   const ART_W = 2752, ART_H = 1536;      // room art / frames are 16:9 at this size
   const SEQ_END = 0.8;                   // share of the intro scroll used by the walk-in; the rest holds the room
   const $ = (s, el = document) => el.querySelector(s);
@@ -16,7 +20,8 @@
   const room = $("#room"), cam = $(".room-cam"), pan = $(".room-pan"), poster = $("#roomPoster");
   const loops = $$(".room-loop"), stage = $(".room-stage");
   const FW = 1920, FH = 1080;            // the room still, the videos and the masks share this frame
-  const enterBtn = $("#enterBtn"), hero = $("#hero");
+  const enterBtn = $("#enterBtn"), hero = $("#hero"), knockWrap = $(".knock-wrap");
+  const DOOR = [0.492, 0.497];            // door centre in the 16:9 walk-in frame (phone frames are a centre crop of it)
   const store = $("#store"), bagEl = $("#bag"), phone = $("#phone");
   const dialog = $("#dialog"), promptEl = $("#prompt");
 
@@ -24,8 +29,9 @@
 
   /* ============================================================ loader */
   async function boot() {
-    const tips = C.loaderTips; let t = 0;
-    const tipTimer = setInterval(() => { $("#ldTip").textContent = tips[++t % tips.length]; }, 2200);
+    let ti = 0;
+    $("#ldTip").textContent = t("tips")[0];
+    const tipTimer = setInterval(() => { const tips = t("tips"); $("#ldTip").textContent = tips[++ti % tips.length]; }, 2200);
     let list = [];
     try {
       const url = isPhone() && C.entryManifestMobile ? C.entryManifestMobile : C.entryManifest;
@@ -75,7 +81,18 @@
     canvas.width = Math.round(pin.clientWidth * dpr);
     canvas.height = Math.round(pin.clientHeight * dpr);
     lastFrame = -1; draw(true);
+    placeKnock();
     layoutRoom();
+  }
+  // the knock button sits on the door wherever the cover-fit puts it
+  function placeKnock() {
+    const img = frames.find(Boolean);
+    if (!img) return;
+    const fw = img.naturalWidth, fh = img.naturalHeight;
+    const fx = fw < fh ? (DOOR[0] * 1920 - (1920 - fw) / 2) / fw : DOOR[0];
+    const W = pin.clientWidth, H = pin.clientHeight, s = Math.max(W / fw, H / fh);
+    knockWrap.style.setProperty("--door-x", fx * fw * s + (W - fw * s) / 2 + "px");
+    knockWrap.style.setProperty("--door-y", DOOR[1] * fh * s + (H - fh * s) / 2 + "px");
   }
   function layoutRoom() {
     const W = pan.clientWidth, H = pan.clientHeight, s = Math.max(W / FW, H / FH);
@@ -132,7 +149,8 @@
   }
   function introAnim() {
     gsap.from(".hero-title span", { yPercent: 30, opacity: 0, duration: 1.6, ease: "power4.out", stagger: .12, delay: .3 });
-    gsap.from([".hero-left", ".hero-cta"], { y: 30, opacity: 0, duration: 1.1, ease: "power3.out", stagger: .08, delay: .7 });
+    gsap.from([".knock-wrap", "#hero .scroll-hint"], { opacity: 0, duration: 1.1, ease: "power2.out", stagger: .15, delay: .7 });
+    gsap.from("#enterBtn", { scale: .6, duration: 1.1, ease: "back.out(1.6)", delay: .7, clearProps: "transform" });
     gsap.from("#nav", { y: -30, opacity: 0, duration: 1, ease: "power3.out", delay: .5 });
   }
 
@@ -265,18 +283,18 @@
     C.hotspots.forEach((h) => {
       const poly = document.createElementNS(NS, "polygon");
       poly.setAttribute("points", h.points); poly.setAttribute("class", "hs");
-      poly.setAttribute("tabindex", "0"); poly.setAttribute("role", "button"); poly.setAttribute("aria-label", h.label);
+      poly.setAttribute("tabindex", "0"); poly.setAttribute("role", "button"); poly.id = "hs-" + h.id;
       svg.appendChild(poly);
       const b = document.createElement("div");
       b.className = "blip" + (h.anchor[0] > ART_W * .66 ? " is-left" : "");
       b.id = "blip-" + h.id;
-      b.innerHTML = `<span class="bd"></span><span class="bl"><kbd>${h.key}</kbd>${h.label}</span>`;
+      b.innerHTML = `<span class="bd"></span><span class="bl"></span>`;
       b.style.setProperty("--bx", h.anchor[0] / ART_W); b.style.setProperty("--by", h.anchor[1] / ART_H);
       blips.appendChild(b);
       const on = (v) => {
         b.classList.toggle("is-on", v);
         promptEl.hidden = !v;
-        if (v) { promptEl.querySelector("kbd").textContent = h.key; promptEl.querySelector("span").textContent = h.label; }
+        if (v) { promptEl.querySelector("kbd").textContent = h.key; promptEl.querySelector("span").textContent = hsLabel(h); }
       };
       // the label and dot are clickable too, so what you point at is what you get
       [poly, b].forEach((el) => {
@@ -287,6 +305,14 @@
       poly.addEventListener("focus", () => on(true));
       poly.addEventListener("blur", () => on(false));
       poly.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(h.open, h); } });
+    });
+    labelHotspots();
+  }
+  const hsLabel = (h) => { const v = t("hs." + h.id); return v === "hs." + h.id ? h.label : v; };
+  function labelHotspots() {
+    C.hotspots.forEach((h) => {
+      $("#hs-" + h.id).setAttribute("aria-label", hsLabel(h));
+      $(`#blip-${h.id} .bl`).innerHTML = `<kbd>${h.key}</kbd>${hsLabel(h)}`;
     });
   }
 
@@ -379,13 +405,13 @@
 
   /* ============================================================ Nily */
   const LINES = {
-    hola: { text: "Hey, bienvenid@ a L' Clav. Ponte cómodo. ¿Qué andas buscando hoy?",
-      opts: [["Tops", "tops"], ["Bottoms", "bottoms"], ["Algo especial", "especiales"], ["Agendar cita", "cita"]] },
-    nily: { text: "Dime. Si no lo ves en el rack, te lo consigo.",
-      opts: [["Ver tops", "tops"], ["Ver bottoms", "bottoms"], ["Pedido especial", "pedido"], ["Agendar cita", "cita"]] }
+    hola: { text: "nily.hola", opts: [["opt.tops", "tops"], ["opt.bottoms", "bottoms"], ["opt.special", "especiales"], ["opt.book", "cita"]] },
+    nily: { text: "nily.again", opts: [["opt.seeTops", "tops"], ["opt.seeBottoms", "bottoms"], ["opt.request", "pedido"], ["opt.book", "cita"]] }
   };
+  let lastTalk = null;
   function talk(key) {
-    const l = LINES[key];
+    lastTalk = key;
+    const l = { text: t(LINES[key].text), opts: LINES[key].opts.map(([k, o]) => [t(k), o]) };
     if (isPhone()) {
       $("#ctrlLine").textContent = l.text;
       gsap.fromTo("#ctrlLine", { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .4 });
@@ -426,25 +452,25 @@
     dialog.hidden = true;
     if (kind === "top") return scrollToTop();
     if (kind === "nily") { if (!inRoom) scrollToRoom(1.6); return talk("nily"); }
-    if (kind === "billar") return toast("La mesa de billar abre pronto. Ve practicando.");
+    if (kind === "billar") return toast(t("pool"));
     if (kind === "cita" || kind === "pedido") return openPhone(kind);
     if (["tops", "bottoms", "especiales"].includes(kind)) return openStore(kind, h || hotspotById(kind));
   }
 
   /* ============================================================ store */
-  const CAT_TITLE = { tops: "Tops", bottoms: "Bottoms", especiales: "Piezas especiales" };
+  const catTitle = (c) => t("cat." + c);
   const ICON = {
     tops: '<path d="M22 8 32 14 42 8 56 16 50 28 44 25V56H20V25L14 28 8 16Z"/>',
     bottoms: '<path d="M18 6H46L50 58H37L32 24 27 58H14Z"/><path d="M18 13H46"/>',
     especiales: '<path d="M32 6 39 24 58 25 43 37 48 56 32 45 16 56 21 37 6 25 25 24Z"/>'
   };
-  const art = (cat) => `<div class="ph-art"><svg viewBox="0 0 64 64">${ICON[cat]}</svg>Foto pronto</div>`;
+  const art = (cat) => `<div class="ph-art"><svg viewBox="0 0 64 64">${ICON[cat]}</svg>${t("photoSoon")}</div>`;
   const imgOf = (p) => p.image || (p.images && p.images[0]) || "";
-  const price = (p) => (p.price == null ? "Consultar" : `$${p.price}`);
+  const price = (p) => (p.price == null ? t("ask") : `$${p.price}`);
   let cat = "tops", sizeFilter = "";
 
   async function getProducts() {
-    if (!products) products = await (await fetch("data/products.json")).json();
+    if (!products) products = await (await fetch("data/products.json?v=7")).json();
     return products;
   }
   async function openStore(kind, h) {
@@ -467,7 +493,7 @@
   function setCat(kind) {
     cat = kind; sizeFilter = "";
     $$(".st-tabs [data-cat]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.cat === kind)));
-    $("#stTitle").textContent = CAT_TITLE[kind];
+    $("#stTitle").textContent = catTitle(kind);
     if (layers.length && layers[layers.length - 1].name.startsWith("tienda/")) history.replaceState(history.state, "", "#tienda/" + kind);
     renderList();
     $("#stScroll").scrollTop = 0;
@@ -479,22 +505,22 @@
     $("#stPdp").hidden = true;
     const el = $("#stList"); el.hidden = false;
     el.innerHTML = `
-      <div class="st-filters" role="group" aria-label="Filtrar por talla">
-        <span class="lbl">Talla</span>
-        <button aria-pressed="${!sizeFilter}" data-size="">Todas</button>
+      <div class="st-filters" role="group" aria-label="${t("filterBy")}">
+        <span class="lbl">${t("size")}</span>
+        <button aria-pressed="${!sizeFilter}" data-size="">${t("all")}</button>
         ${sizes.map((s) => `<button aria-pressed="${s === sizeFilter}" data-size="${s}">${s}</button>`).join("")}
       </div>
-      <p class="st-count">${list.length} ${list.length === 1 ? "pieza" : "piezas"}</p>
-      ${list.length ? `<div class="st-grid">${list.map(card).join("")}</div>` : `<p class="st-empty">No hay piezas en esa talla ahora mismo.</p>`}
-      <div class="st-help"><span>¿No ves tu talla o lo que buscas?</span><button class="btn ghost" data-open="pedido">Pídeselo a Nily</button></div>`;
+      <p class="st-count">${list.length} ${list.length === 1 ? t("piece") : t("pieces")}</p>
+      ${list.length ? `<div class="st-grid">${list.map(card).join("")}</div>` : `<p class="st-empty">${t("empty")}</p>`}
+      <div class="st-help"><span>${t("help")}</span><button class="btn ghost" data-open="pedido">${t("askNily")}</button></div>`;
     $$(".st-filters button", el).forEach((b) => b.addEventListener("click", () => { sizeFilter = b.dataset.size; renderList(); }));
     $$(".card", el).forEach((c) => c.addEventListener("click", () => openPdp(c.dataset.id)));
   }
   function card(p) {
     const img = imgOf(p);
     return `<button class="card" data-id="${p.id}">
-      <div class="card-img">${img ? `<img src="${img}" alt="${p.name}" loading="lazy">` : art(cat)}${p.tag ? `<span class="card-tag">${p.tag}</span>` : ""}</div>
-      <div><p class="card-name">${p.name}</p><p class="card-meta"><span>${price(p)}</span><span>${p.sizes.join(" · ")}</span></p></div>
+      <div class="card-img">${img ? `<img src="${img}" alt="${pn(p)}" loading="lazy">` : art(cat)}${p.tag ? `<span class="card-tag">${ptag(p)}</span>` : ""}</div>
+      <div><p class="card-name">${pn(p)}</p><p class="card-meta"><span>${price(p)}</span><span>${p.sizes.join(" · ")}</span></p></div>
     </button>`;
   }
   function openPdp(id) {
@@ -503,23 +529,24 @@
     let size = p.sizes.length === 1 ? p.sizes[0] : "";
     const img = imgOf(p);
     const el = $("#stPdp");
+    const again = openPdp.current === id && !el.hidden;     // re-render in place (language switch)
     el.innerHTML = `<div class="pdp">
-      <div class="pdp-img">${img ? `<img src="${img}" alt="${p.name}">` : art(cat)}${p.tag ? `<span class="card-tag">${p.tag}</span>` : ""}</div>
+      <div class="pdp-img">${img ? `<img src="${img}" alt="${pn(p)}">` : art(cat)}${p.tag ? `<span class="card-tag">${ptag(p)}</span>` : ""}</div>
       <div class="pdp-info">
-        <p class="eyebrow">${CAT_TITLE[cat]}</p>
-        <h3>${p.name}</h3>
+        <p class="eyebrow">${catTitle(cat)}</p>
+        <h3>${pn(p)}</h3>
         <p class="pdp-price">${price(p)}</p>
-        <p class="pdp-desc">${p.desc || "Pieza de ejemplo: aquí va la descripción real de Nily (tela, fit y cómo combinarla)."}</p>
-        <div class="pdp-lbl"><span>Talla</span><em id="sizeHint">${size ? "" : "Escoge tu talla"}</em></div>
-        <div class="pdp-sizes" role="group" aria-label="Talla">${p.sizes.map((s) => `<button type="button" aria-pressed="${s === size}">${s}</button>`).join("")}</div>
+        <p class="pdp-desc">${pd(p)}</p>
+        <div class="pdp-lbl"><span>${t("size")}</span><em id="sizeHint">${size ? "" : t("pickSize")}</em></div>
+        <div class="pdp-sizes" role="group" aria-label="${t("size")}">${p.sizes.map((s) => `<button type="button" aria-pressed="${s === size}">${s}</button>`).join("")}</div>
         <div class="pdp-actions">
-          <button class="btn" id="addBag">AÑADIR A LA BOLSA</button>
-          <button class="btn ghost" id="tryOn">Pruébatelo: agenda una cita</button>
-          ${C.whatsapp ? `<a class="btn ghost" target="_blank" rel="noopener" href="${wa(`Hola Nily, me interesa: ${p.name}`)}">Preguntar por WhatsApp</a>` : ""}
+          <button class="btn" id="addBag">${t("addBag")}</button>
+          <button class="btn ghost" id="tryOn">${t("tryOn")}</button>
+          ${C.whatsapp ? `<a class="btn ghost" target="_blank" rel="noopener" href="${wa(t("waInterest", { p: pn(p) }))}">${t("askWa")}</a>` : ""}
         </div>
         <div class="pdp-acc">
-          <details><summary>Cómo funciona apartar</summary><p>Añade tus piezas a la bolsa y apártalas. Nily te escribe para confirmar y te las guarda para que te las pruebes en el cuarto o las recojas.</p></details>
-          <details><summary>Tallas y medidas</summary><p>Si tienes dudas con la talla, pídele a Nily las medidas exactas o pruébatela en tu cita.</p></details>
+          <details><summary>${t("acc.howT")}</summary><p>${t("acc.howP")}</p></details>
+          <details><summary>${t("acc.sizeT")}</summary><p>${t("acc.sizeP")}</p></details>
         </div>
       </div></div>`;
     $$(".pdp-sizes button", el).forEach((b) => b.addEventListener("click", () => {
@@ -530,19 +557,21 @@
     $("#addBag", el).addEventListener("click", () => {
       if (added) return openBag();
       if (!size) {
-        $("#sizeHint").textContent = "Escoge tu talla primero";
+        $("#sizeHint").textContent = t("pickSizeFirst");
         $(".pdp-lbl", el).scrollIntoView({ behavior: "smooth", block: "center" });
         gsap.fromTo(".pdp-sizes", { x: -6 }, { x: 0, duration: .4, ease: "elastic.out(1,.3)" });
         return;
       }
       addToBag({ id: p.id, cat, size });
       added = true;
-      $("#addBag", el).textContent = "VER MI BOLSA";
+      $("#addBag", el).textContent = t("viewBag");
     });
-    $("#tryOn", el).addEventListener("click", () => openPhone("cita", { mensaje: `Quiero probarme: ${p.name}${size ? ` (talla ${size})` : ""}` }));
+    $("#tryOn", el).addEventListener("click", () => openPhone("cita", { mensaje: t("tryOnMsg", { p: pn(p) }) + (size ? t("tryOnSize", { s: size }) : "") }));
+    if (again) return;
     $("#stList").hidden = true; el.hidden = false;
     $("#stScroll").scrollTop = 0;
-    pushLayer(`tienda/${cat}/${p.id}`, () => { el.hidden = true; $("#stList").hidden = false; $("#stScroll").scrollTop = listScroll; });
+    openPdp.current = id;
+    pushLayer(`tienda/${cat}/${p.id}`, () => { openPdp.current = null; el.hidden = true; $("#stList").hidden = false; $("#stScroll").scrollTop = listScroll; });
   }
   $$(".st-tabs [data-cat]").forEach((b) => b.addEventListener("click", () => {
     if (!$("#stPdp").hidden) history.back();     // leave the product page first
@@ -563,7 +592,7 @@
   function addToBag(item) {
     if (!bag.some((b) => b.id === item.id && b.size === item.size)) bag.push(item);
     saveBag(); updateBadges(true);
-    toast("Añadido a tu bolsa");
+    toast(t("added"));
   }
   const findP = (b) => (products && products[b.cat] || []).find((p) => p.id === b.id);
   async function openBag() {
@@ -574,37 +603,38 @@
   function renderBag() {
     const body = $("#bagBody");
     if (!bag.length) {
-      body.innerHTML = `<div class="bag-empty"><p>Tu bolsa está vacía.</p><button class="btn" data-open="tops">VER TOPS</button></div>`;
+      body.innerHTML = `<div class="bag-empty"><p>${t("bagEmpty")}</p><button class="btn" data-open="tops">${t("seeTops")}</button></div>`;
       return;
     }
     body.innerHTML = bag.map((b, i) => {
       const p = findP(b) || { name: b.id };
       const img = imgOf(p);
       return `<div class="bag-item"><div class="bag-thumb">${img ? `<img src="${img}" alt="">` : `<svg viewBox="0 0 64 64">${ICON[b.cat]}</svg>`}</div>
-        <div><b>${p.name}</b><span>Talla ${b.size} · ${price(p)}</span></div>
-        <button class="bag-rm" data-rm="${i}" aria-label="Quitar ${p.name}">✕</button></div>`;
+        <div><b>${pn(p)}</b><span>${t("size")} ${b.size} · ${price(p)}</span></div>
+        <button class="bag-rm" data-rm="${i}" aria-label="${t("remove")} ${pn(p)}">✕</button></div>`;
     }).join("") + `
       <form class="form bag-form" name="apartado" data-form="apartado">
         <input type="hidden" name="form-name" value="apartado"><p hidden><input name="bot-field"></p>
-        <label>Nombre<input name="nombre" required autocomplete="name"></label>
-        <label>WhatsApp o teléfono<input name="contacto" required inputmode="tel" autocomplete="tel"></label>
-        <div class="seg" role="radiogroup" aria-label="Cómo lo quieres">
-          <label><input type="radio" name="modo" value="Probármelo en el cuarto" checked><span>Probármelo en el cuarto</span></label>
-          <label><input type="radio" name="modo" value="Recoger"><span>Solo recoger</span></label>
+        <label>${t("f.name")}<input name="nombre" required autocomplete="name"></label>
+        <label>${t("f.contact")}<input name="contacto" required inputmode="tel" autocomplete="tel"></label>
+        <div class="seg" role="radiogroup" aria-label="${t("f.how")}">
+          <label><input type="radio" name="modo" value="Probármelo en el cuarto" checked><span>${t("f.tryRoom")}</span></label>
+          <label><input type="radio" name="modo" value="Recoger"><span>${t("f.pickup")}</span></label>
         </div>
         <div class="form-row-cita" style="display:grid;gap:12px">
-          <label>Día<input type="date" name="fecha" min="${today()}"></label>
-          <label>Hora<select name="hora">${C.citaHoras.map((h) => `<option>${h}</option>`).join("")}</select></label>
+          <label>${t("f.day")}<input type="date" name="fecha" min="${today()}"></label>
+          <label>${t("f.time")}<select name="hora">${C.citaHoras.map((h) => `<option>${h}</option>`).join("")}</select></label>
         </div>
-        <label>Nota (opcional)<textarea name="nota" placeholder="Algo que Nily deba saber…"></textarea></label>
+        <label>${t("f.note")}<textarea name="nota" placeholder="${t("f.notePh")}"></textarea></label>
         <input type="hidden" name="piezas" value="">
-        <button class="btn" type="submit">APARTAR ${bag.length} ${bag.length === 1 ? "PIEZA" : "PIEZAS"}</button>
+        <input type="hidden" name="idioma" value="${I18N.lang}">
+        <button class="btn" type="submit">${bag.length === 1 ? t("f.reserve1") : t("f.reserveN", { n: bag.length })}</button>
       </form>`;
     $$("[data-rm]", body).forEach((b) => b.addEventListener("click", () => { bag.splice(+b.dataset.rm, 1); saveBag(); renderBag(); }));
     const f = $("form", body);
     const cita = $(".form-row-cita", f);
     $$("input[name=modo]", f).forEach((r) => r.addEventListener("change", () => { cita.style.display = r.value === "Recoger" && r.checked ? "none" : "grid"; }));
-    f.piezas.value = bag.map((b) => { const p = findP(b); return `${p ? p.name : b.id} (talla ${b.size})`; }).join("\n");
+    f.piezas.value = bag.map((b) => { const p = findP(b); return `${p ? p.name : b.id} (talla ${b.size})`; }).join("\n");   // Nily reads Spanish
     f.addEventListener("submit", (e) => submit(e, () => {
       bag = []; saveBag();
       const ok = $(".ok", body); body.innerHTML = ""; body.appendChild(ok);   // only the confirmation stays
@@ -616,29 +646,32 @@
   const wa = (text) => `https://wa.me/${C.whatsapp}?text=${encodeURIComponent(text)}`;
   const today = () => new Date().toISOString().slice(0, 10);
   function openPhone(kind, pre = {}) {
-    $("#phTitle").textContent = kind === "cita" ? "Agendar cita" : "Pedido especial";
-    $("#phClock").textContent = new Date().toLocaleTimeString("es-US", { hour: "numeric", minute: "2-digit" });
+    openPhone.current = kind;
+    $("#phTitle").textContent = kind === "cita" ? t("ph.book") : t("ph.request");
+    $("#phClock").textContent = new Date().toLocaleTimeString(I18N.lang === "en" ? "en-US" : "es-US", { hour: "numeric", minute: "2-digit" });
     $("#phBody").innerHTML = kind === "cita" ? `
-      <p class="ph-lead">Ven al cuarto a probarte la ropa con Nily. Escoge día y hora y te confirma por mensaje.</p>
+      <p class="ph-lead">${t("ph.bookLead")}</p>
       <form class="form" name="cita" data-form="cita">
         <input type="hidden" name="form-name" value="cita"><p hidden><input name="bot-field"></p>
-        <label>Nombre<input name="nombre" required autocomplete="name"></label>
-        <label>WhatsApp o teléfono<input name="contacto" required inputmode="tel" autocomplete="tel"></label>
-        <label>Día<input type="date" name="fecha" required min="${today()}"></label>
-        <label>Hora<select name="hora" required>${C.citaHoras.map((h) => `<option>${h}</option>`).join("")}</select></label>
-        <label>¿Qué buscas? (opcional)<textarea name="mensaje" placeholder="Outfit para un evento, tallas, estilo…">${esc(pre.mensaje)}</textarea></label>
-        <button class="btn" type="submit">RESERVAR</button>
+        <input type="hidden" name="idioma" value="${I18N.lang}">
+        <label>${t("f.name")}<input name="nombre" required autocomplete="name"></label>
+        <label>${t("f.contact")}<input name="contacto" required inputmode="tel" autocomplete="tel"></label>
+        <label>${t("f.day")}<input type="date" name="fecha" required min="${today()}"></label>
+        <label>${t("f.time")}<select name="hora" required>${C.citaHoras.map((h) => `<option>${h}</option>`).join("")}</select></label>
+        <label>${t("f.lookingFor")}<textarea name="mensaje" placeholder="${t("f.lookingPh")}">${esc(pre.mensaje)}</textarea></label>
+        <button class="btn" type="submit">${t("f.book")}</button>
       </form>` : `
-      <p class="ph-lead">¿Buscas algo específico? Cuéntale a Nily y te lo consigue.</p>
+      <p class="ph-lead">${t("ph.requestLead")}</p>
       <form class="form" name="pedido" data-form="pedido">
         <input type="hidden" name="form-name" value="pedido"><p hidden><input name="bot-field"></p>
-        <label>Nombre<input name="nombre" required autocomplete="name"></label>
-        <label>WhatsApp o teléfono<input name="contacto" required inputmode="tel" autocomplete="tel"></label>
-        <label>Pieza<input name="pieza" value="${esc(pre.pieza)}" placeholder="Ej: chaqueta de cuero vintage"></label>
-        <label>Talla<input name="talla" value="${esc(pre.talla)}" placeholder="Ej: M / 32"></label>
-        <label>Presupuesto (opcional)<input name="presupuesto" placeholder="Ej: hasta $150"></label>
-        <label>Mensaje<textarea name="mensaje" required placeholder="Color, estilo, para cuándo lo necesitas…"></textarea></label>
-        <button class="btn" type="submit">ENVIAR</button>
+        <input type="hidden" name="idioma" value="${I18N.lang}">
+        <label>${t("f.name")}<input name="nombre" required autocomplete="name"></label>
+        <label>${t("f.contact")}<input name="contacto" required inputmode="tel" autocomplete="tel"></label>
+        <label>${t("f.piece")}<input name="pieza" value="${esc(pre.pieza)}" placeholder="${t("f.piecePh")}"></label>
+        <label>${t("size")}<input name="talla" value="${esc(pre.talla)}" placeholder="${t("f.sizePh")}"></label>
+        <label>${t("f.budget")}<input name="presupuesto" placeholder="${t("f.budgetPh")}"></label>
+        <label>${t("f.msg")}<textarea name="mensaje" required placeholder="${t("f.msgPh")}"></textarea></label>
+        <button class="btn" type="submit">${t("f.send")}</button>
       </form>`;
     $("#phBody form").addEventListener("submit", (e) => submit(e));
     if (phone.hidden) { phone.hidden = false; pushLayer(kind, () => { phone.hidden = true; }); }
@@ -655,11 +688,11 @@
         ok = r.ok;
       } catch { ok = false; }
     }
-    if (!ok) { btn.disabled = false; return toast("No se pudo enviar. Intenta otra vez."); }
+    if (!ok) { btn.disabled = false; return toast(t("sendFail")); }
     const summary = [...data.entries()].filter(([k, v]) => v && !["form-name", "bot-field"].includes(k)).map(([k, v]) => `${k}: ${v}`).join("\n");
-    const msg = { cita: "Nily te escribe para confirmar la cita.", pedido: "Nily recibió tu pedido y te escribe pronto.", apartado: "Listo. Nily te escribe para confirmar tus piezas." }[f.dataset.form];
-    f.outerHTML = `<div class="ok"><div class="big-ok">ENVIADO</div><p>${msg}</p>${isDemo ? `<p class="demo-note">Modo demo: este formulario todavía no envía los datos.</p>` : ""}
-      ${C.whatsapp ? `<a class="btn ghost" target="_blank" rel="noopener" href="${wa(summary)}">Mandarlo también por WhatsApp</a>` : ""}</div>`;
+    const msg = t("sent." + f.dataset.form);
+    f.outerHTML = `<div class="ok"><div class="big-ok">${t("sent")}</div><p>${msg}</p>${isDemo ? `<p class="demo-note">${t("sent.demo")}</p>` : ""}
+      ${C.whatsapp ? `<a class="btn ghost" target="_blank" rel="noopener" href="${wa(summary)}">${t("sent.wa")}</a>` : ""}</div>`;
     if (after) after();
   }
 
@@ -677,6 +710,7 @@
       if (o.closest("#bag") && o.dataset.open === "tops") { back(); setTimeout(() => open("tops"), 50); return; }
       open(o.dataset.open); return;
     }
+    if (e.target.closest("[data-lang]")) { e.preventDefault(); closeMenu(); I18N.set(I18N.lang === "es" ? "en" : "es"); return; }
     if (e.target.closest("[data-bag]")) { e.preventDefault(); closeMenu(); openBag(); return; }
     if (e.target.closest("[data-go=top]")) { e.preventDefault(); closeMenu(); scrollToTop(); return; }
     if (e.target.closest("[data-back]")) { e.preventDefault(); back(); return; }
@@ -689,7 +723,7 @@
     const k = e.key.toLowerCase();
     if (k === "escape") { if (!menu.hidden) return closeMenu(); if (!dialog.hidden) { dialog.hidden = true; return; } return back(); }
     if (layers.length) return;
-    if (!inRoom && k === "enter" && progress < .02 && !enterBtn.disabled) { e.preventDefault(); return scrollToRoom(C.enterSeconds); }
+    if (!inRoom && k === "enter" && progress < .02 && !enterBtn.disabled) { e.preventDefault(); return knock(); }
     if (!dialog.hidden && /^[1-4]$/.test(k)) { const b = $$("#dlOpts button")[+k - 1]; if (b) b.click(); return; }
     const map = { t: "tops", b: "bottoms", p: "especiales", c: "cita", m: "pedido", e: "nily", 8: "billar" };
     if (map[k] && (inRoom || ["c", "m"].includes(k))) { e.preventDefault(); open(map[k], hotspotById(map[k])); }
@@ -722,10 +756,32 @@
 
   const links = [];
   if (C.instagram) links.push(`<a href="https://instagram.com/${C.instagram}" target="_blank" rel="noopener">Instagram</a>`);
-  if (C.whatsapp) links.push(`<a href="${wa("Hola Nily")}" target="_blank" rel="noopener">WhatsApp</a>`);
+  if (C.whatsapp) links.push(`<a href="${wa(t("waHello"))}" target="_blank" rel="noopener">WhatsApp</a>`);
   $("#footLinks").innerHTML = links.join("");
 
-  enterBtn.addEventListener("click", () => scrollToRoom(C.enterSeconds));
+  // knock knock, then the door opens
+  let knocking = false;
+  function knock() {
+    if (knocking) return;
+    knocking = true;
+    enterBtn.classList.remove("is-knocking"); void enterBtn.offsetWidth; enterBtn.classList.add("is-knocking");
+    preloadRoom();
+    setTimeout(() => { knocking = false; enterBtn.classList.remove("is-knocking"); scrollToRoom(C.enterSeconds); }, 520);
+  }
+  enterBtn.addEventListener("click", knock);
+
+  // language switch: static text is redone by I18N.apply; redraw whatever is open
+  window.addEventListener("langchange", () => {
+    labelHotspots();
+    if (lastTalk) { if (isPhone()) $("#ctrlLine").textContent = t(LINES[lastTalk].text); else if (!dialog.hidden) talk(lastTalk); }
+    if (!store.hidden) {
+      $("#stTitle").textContent = catTitle(cat);
+      renderList();                 // (hides the product page; put it back and redraw it in place)
+      if (openPdp.current) { $("#stList").hidden = true; $("#stPdp").hidden = false; openPdp(openPdp.current); }
+    }
+    if (!bagEl.hidden) renderBag();
+    if (!phone.hidden && openPhone.current) openPhone(openPhone.current);
+  });
   window.addEventListener("resize", fit);
   buildHotspots();
   setupScroll();

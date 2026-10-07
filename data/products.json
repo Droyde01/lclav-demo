@@ -1,22 +1,22 @@
 {
   "_note": "EJEMPLOS. Reemplazar con el catálogo real de Nily (nombre, precio, tallas, foto). price null = 'Consultar'. image null = ilustración de relleno.",
   "tops": [
-    { "id": "t1", "name": "Hoodie oversize gris", "price": null, "sizes": ["S", "M", "L", "XL"], "image": null, "tag": "Ejemplo" },
-    { "id": "t2", "name": "Chaqueta de cuero negra", "price": null, "sizes": ["M", "L"], "image": null, "tag": "Ejemplo" },
-    { "id": "t3", "name": "Varsity crema", "price": null, "sizes": ["S", "M", "L"], "image": null, "tag": "Ejemplo" },
-    { "id": "t4", "name": "Camisa de franela", "price": null, "sizes": ["M", "L", "XL"], "image": null, "tag": "Ejemplo" },
-    { "id": "t5", "name": "Chaqueta denim", "price": null, "sizes": ["S", "M"], "image": null, "tag": "Ejemplo" },
-    { "id": "t6", "name": "Bomber marrón", "price": null, "sizes": ["L", "XL"], "image": null, "tag": "Ejemplo" }
+    { "id": "t1", "name": "Hoodie oversize gris", "name_en": "Oversized grey hoodie", "price": null, "sizes": ["S", "M", "L", "XL"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "t2", "name": "Chaqueta de cuero negra", "name_en": "Black leather jacket", "price": null, "sizes": ["M", "L"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "t3", "name": "Varsity crema", "name_en": "Cream varsity jacket", "price": null, "sizes": ["S", "M", "L"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "t4", "name": "Camisa de franela", "name_en": "Flannel shirt", "price": null, "sizes": ["M", "L", "XL"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "t5", "name": "Chaqueta denim", "name_en": "Denim jacket", "price": null, "sizes": ["S", "M"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "t6", "name": "Bomber marrón", "name_en": "Brown bomber", "price": null, "sizes": ["L", "XL"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" }
   ],
   "bottoms": [
-    { "id": "b1", "name": "Pantalón wide-leg crema", "price": null, "sizes": ["28", "30", "32", "34"], "image": null, "tag": "Ejemplo" },
-    { "id": "b2", "name": "Jeans baggy azul", "price": null, "sizes": ["30", "32", "34"], "image": null, "tag": "Ejemplo" },
-    { "id": "b3", "name": "Cargo marrón", "price": null, "sizes": ["30", "32", "34", "36"], "image": null, "tag": "Ejemplo" },
-    { "id": "b4", "name": "Pantalón de vestir negro", "price": null, "sizes": ["30", "32"], "image": null, "tag": "Ejemplo" }
+    { "id": "b1", "name": "Pantalón wide-leg crema", "name_en": "Cream wide-leg trousers", "price": null, "sizes": ["28", "30", "32", "34"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "b2", "name": "Jeans baggy azul", "name_en": "Blue baggy jeans", "price": null, "sizes": ["30", "32", "34"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "b3", "name": "Cargo marrón", "name_en": "Brown cargo pants", "price": null, "sizes": ["30", "32", "34", "36"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" },
+    { "id": "b4", "name": "Pantalón de vestir negro", "name_en": "Black dress trousers", "price": null, "sizes": ["30", "32"], "image": null, "tag": "Ejemplo", "tag_en": "Sample" }
   ],
   "especiales": [
-    { "id": "e1", "name": "Pieza única · Vintage", "price": null, "sizes": ["Única"], "image": null, "tag": "1 de 1" },
-    { "id": "e2", "name": "Drop limitado", "price": null, "sizes": ["S", "M", "L"], "image": null, "tag": "Limitado" },
-    { "id": "e3", "name": "Hecho a pedido", "price": null, "sizes": ["A medida"], "image": null, "tag": "Custom" }
+    { "id": "e1", "name": "Pieza única · Vintage", "name_en": "One-of-one · Vintage", "price": null, "sizes": ["Única"], "image": null, "tag": "1 de 1", "tag_en": "1 of 1" },
+    { "id": "e2", "name": "Drop limitado", "name_en": "Limited drop", "price": null, "sizes": ["S", "M", "L"], "image": null, "tag": "Limitado", "tag_en": "Limited" },
+    { "id": "e3", "name": "Hecho a pedido", "name_en": "Made to order", "price": null, "sizes": ["A medida"], "image": null, "tag": "Custom", "tag_en": "Custom" }
   ]
 }
