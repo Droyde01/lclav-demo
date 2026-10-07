@@ -142,58 +142,127 @@
     room.classList.add("is-on");
     pin.classList.add("room-mode");
     playRoom();
+    preloadTransitions();
     look.cx = ART_W / 2; clampPan(); startDrift();
     if (!enterRoom.greeted) {
       enterRoom.greeted = true;
       pin.classList.add("room-intro");
       setTimeout(() => pin.classList.remove("room-intro"), 3200);
-      if (!isPhone()) setTimeout(() => { if (inRoom && !layers.length) talk("hola"); }, 1600);
+      if (!isPhone()) setTimeout(() => { if (inRoom && !layers.length && !dived) talk("hola"); }, 1600);
     }
   }
   function leaveRoom() {
     inRoom = false;
     room.classList.remove("is-on");
     pin.classList.remove("room-mode");
-    vids.forEach((v) => v.pause());
+    pauseRoom();
     stopDrift();
     dialog.hidden = true; promptEl.hidden = true;
     gsap.set(cam, { clearProps: "transform" });
   }
 
-  // two stacked videos crossfade into each other so clips chain (smoke → chill → smoke …) with no seam
-  let front = 0, clipIdx = 0, switching = false;
+  // Room clips all start and end on the same frame (Nily's base pose), so the player cuts from one to the
+  // next on "ended": the old clip holds its last frame until the next one is actually playing.
+  let front = 0, clipIdx = 0;
   const clips = C.roomClips || [];
   function preloadRoom() {
     if (preloadRoom.done || !clips.length) return;
     preloadRoom.done = true;
     vids[0].src = clips[0]; vids[0].preload = "auto"; vids[0].load();
+    vids.forEach((v) => v.addEventListener("ended", () => { if (v === vids[front]) nextClip(); }));
+    if (clips.length === 1) vids[0].loop = true;
+  }
+  function preloadNext() {
+    if (clips.length < 2) return;
+    const nxt = vids[1 - front];
+    const src = clips[(clipIdx + 1) % clips.length];
+    if (!nxt.src.endsWith(src)) nxt.src = src;
+    nxt.preload = "auto"; nxt.load();
+  }
+  function nextClip() {
+    const cur = vids[front], nxt = vids[1 - front];
+    nxt.currentTime = 0;
+    nxt.play().then(() => {
+      nxt.classList.add("is-front"); cur.classList.remove("is-front");
+      front = 1 - front; clipIdx = (clipIdx + 1) % clips.length;
+      preloadNext();
+    }).catch(() => {});
   }
   function playRoom() {
     if (!clips.length) return;
-    if (!playRoom.started) {
-      playRoom.started = true;
-      vids.forEach((v) => v.addEventListener("timeupdate", () => maybeSwitch(v)));
-      if (!preloadRoom.done) { preloadRoom.done = true; vids[0].src = clips[0]; }
-      vids[0].play().then(() => vids[0].classList.add("is-front")).catch(() => {});
-      preloadNext();
-    } else vids[front].play().catch(() => {});
+    preloadRoom();
+    const v = vids[front];
+    v.play().then(() => { v.classList.add("is-front"); if (!playRoom.next) { playRoom.next = true; preloadNext(); } }).catch(() => {});
   }
-  function preloadNext() {
-    const nxt = vids[1 - front];
-    nxt.src = clips[(clipIdx + 1) % clips.length];
-    nxt.preload = "auto"; nxt.load();
+  function pauseRoom() { vids.forEach((v) => v.pause()); }
+  // back from a rack: restart the cycle from its first frame (= the base pose the camera lands on)
+  function restartRoom() {
+    vids.forEach((v) => v.classList.remove("is-front"));
+    front = 0; clipIdx = 0;
+    const v = vids[0];
+    if (!v.src.endsWith(clips[0])) v.src = clips[0];
+    v.currentTime = 0;
+    v.classList.add("is-front");
+    v.play().catch(() => {});
+    preloadNext();
   }
-  function maybeSwitch(v) {
-    if (v !== vids[front] || switching || !v.duration) return;
-    if (v.duration - v.currentTime > 0.5) return;
-    switching = true;
-    const nxt = vids[1 - front];
-    nxt.currentTime = 0;
-    nxt.play().then(() => {
-      nxt.classList.add("is-front"); v.classList.remove("is-front");
-      front = 1 - front; clipIdx++;
-      setTimeout(() => { v.pause(); preloadNext(); switching = false; }, 600);
-    }).catch(() => { switching = false; });
+
+  // camera moves into a rack (real Seedance clips), then back out
+  const tIn = $("#transIn"), tBack = $("#transBack");
+  let inRack = null;
+  const warm = {};
+  function preloadTransitions() {
+    if (preloadTransitions.done || !C.transitions) return;
+    preloadTransitions.done = true;
+    const srcs = [...new Set(Object.values(C.transitions).map((t) => t.in))];
+    srcs.forEach((src, i) => setTimeout(() => {          // keep a hidden video per clip so the browser caches it
+      const v = document.createElement("video"); v.muted = true; v.preload = "auto"; v.src = src; warm[src] = v;
+    }, 2500 + i * 2500));
+  }
+  const shift = () => (isPhone() ? 0 : -0.3 * pan.clientWidth);   // desktop: slide the rack left of the shop panel
+  function playThrough(v, src) {
+    return new Promise((res) => {
+      if (!v.src.endsWith(src)) v.src = src;
+      v.currentTime = 0;
+      v.playbackRate = C.transitionRate || 1;
+      v.onended = () => { v.onended = null; res(); };
+      v.play().catch(() => res());
+    });
+  }
+  async function rackIn(kind) {
+    const t = C.transitions && C.transitions[kind];
+    if (!t || !inRoom) return false;
+    inRack = kind; dived = true; stopDrift();
+    dialog.hidden = true; promptEl.hidden = true;
+    pin.classList.add("is-diving");
+    if (isPhone()) gsap.to(look, { cx: ART_W / 2, duration: .5, ease: "power2.out", onUpdate: clampPan });
+    gsap.set(tIn, { x: 0 });
+    const nudge = gsap.to(cam, { scale: 1.04, transformOrigin: "60% 45%", duration: 1.2, ease: "power2.out" });  // instant feedback
+    const done = playThrough(tIn, t.in);
+    await new Promise((r) => (tIn.readyState >= 2 ? r() : tIn.addEventListener("playing", r, { once: true })));
+    nudge.kill(); gsap.set(cam, { clearProps: "transform" });
+    tIn.classList.add("is-on");
+    pauseRoom();
+    gsap.to(tIn, { x: shift(), duration: 1.1, delay: Math.max(0, (tIn.duration || 4) / (C.transitionRate || 1) - 1.3), ease: "power2.inOut" });
+    tBack.src = t.back; tBack.preload = "auto"; tBack.load();
+    await done;
+    return true;
+  }
+  async function rackOut() {
+    const kind = inRack; inRack = null;
+    const t = C.transitions[kind];
+    gsap.set(tBack, { x: gsap.getProperty(tIn, "x") });
+    const done = playThrough(tBack, t.back);
+    await new Promise((r) => (tBack.readyState >= 2 ? r() : tBack.addEventListener("playing", r, { once: true })));
+    tBack.classList.add("is-on"); tIn.classList.remove("is-on");
+    gsap.to(tBack, { x: 0, duration: 1, ease: "power2.inOut" });
+    await done;
+    restartRoom();
+    await new Promise((r) => setTimeout(r, 60));
+    tBack.classList.remove("is-on");
+    pin.classList.remove("is-diving");
+    dived = false;
+    startDrift(1.5);
   }
 
   // art coordinates → .room-pan box (object-fit: cover)
@@ -220,11 +289,14 @@
         promptEl.hidden = !v;
         if (v) { promptEl.querySelector("kbd").textContent = h.key; promptEl.querySelector("span").textContent = h.label; }
       };
-      poly.addEventListener("mouseenter", () => on(true));
-      poly.addEventListener("mouseleave", () => on(false));
+      // the label and dot are clickable too, so what you point at is what you get
+      [poly, b].forEach((el) => {
+        el.addEventListener("mouseenter", () => on(true));
+        el.addEventListener("mouseleave", () => on(false));
+        el.addEventListener("click", () => open(h.open, h));
+      });
       poly.addEventListener("focus", () => on(true));
       poly.addEventListener("blur", () => on(false));
-      poly.addEventListener("click", () => open(h.open, h));
       poly.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(h.open, h); } });
     });
   }
@@ -376,7 +448,9 @@
   async function openStore(kind, h) {
     await getProducts();
     if (store.hidden) {
-      if (h && inRoom) await dive(h);
+      if (inRoom && !(await rackIn(kind)) && h) await dive(h);
+      pin.classList.add("is-shopping");
+      dialog.hidden = true; promptEl.hidden = true;
       store.hidden = false;
       pushLayer("tienda/" + kind, closeStore);
     }
@@ -385,7 +459,8 @@
   function closeStore() {
     store.hidden = true;
     $("#stPdp").hidden = true; $("#stList").hidden = false;
-    undive();
+    pin.classList.remove("is-shopping");
+    if (inRack) rackOut(); else undive();
   }
   function setCat(kind) {
     cat = kind; sizeFilter = "";

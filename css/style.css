@@ -164,16 +164,22 @@ kbd {
 .room-cam { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
 .room-pan { position: absolute; inset: 0; transition: filter .9s var(--ease); }
 .room-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
-.room-vid { opacity: 0; transition: opacity .45s linear; }
+.room-vid { opacity: 0; }
 .room-vid.is-front { opacity: 1; }
-.pin.is-diving .room-pan { filter: brightness(.5) saturate(1.1); }
+.trans-vid { opacity: 0; will-change: transform; }
+.trans-vid.is-on { opacity: 1; }
+.pin.is-shopping .room-pan { filter: brightness(.5) saturate(1.1); }
 #blips, #hud .hud-loc { transition: opacity .3s; }
 .pin.is-diving #blips, .pin.is-diving .hud-loc, .pin.is-diving .room-hint { opacity: 0 !important; }
 #hotspots { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hs { fill: rgba(255, 61, 154, 0); stroke: rgba(255, 255, 255, 0); stroke-width: 4; cursor: pointer; outline: none; transition: fill .3s, stroke .3s; }
 .hs:focus-visible { stroke: rgba(255, 255, 255, .6); stroke-dasharray: 10 10; }   /* keyboard users still see the zone */
 #blips { position: absolute; inset: 0; pointer-events: none; }
-.blip { position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 10px; }
+/* the dot sits exactly on the object; the label grows to one side */
+.blip { position: absolute; transform: translate(-7px, -50%); display: flex; align-items: center; gap: 10px; pointer-events: auto; cursor: pointer; }
+.blip.is-left { transform: translate(calc(-100% + 7px), -50%); }
+.blip.is-off { pointer-events: none; }
+.has-cursor .blip { cursor: none; }
 .blip .bd {
   position: relative; flex: none; width: 14px; height: 14px; border-radius: 50%;
   background: var(--ink); box-shadow: 0 0 0 4px rgba(255, 61, 154, .45), 0 0 18px var(--pink);
@@ -433,6 +439,8 @@ kbd {
   .blip .bl { padding: 6px 9px 6px 6px; font-size: 10px; letter-spacing: .08em; }
   .blip .bl kbd { display: none; }
   .blip .bd { width: 12px; height: 12px; }
+  .blip { transform: translate(-6px, -50%); }
+  .blip.is-left { transform: translate(calc(-100% + 6px), -50%); }
   .room-hint {
     position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 6px;
     padding: 60px 16px max(18px, env(safe-area-inset-bottom));

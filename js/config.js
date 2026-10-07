@@ -11,7 +11,14 @@ window.LCLAV = {
   entryManifestMobile: "assets/entry_m/manifest.json",
   // Room clips play in order and crossfade into each other (each starts and ends on the same pose).
   // Add the "chill" clip (looks around, cleans her sandal) here when it's generated.
-  roomClips: ["assets/room_smoke.mp4"],
+  roomClips: ["assets/room_smoke.mp4", "assets/room_chill.mp4"],
+  // Camera moves into a rack before its shop opens (and back out when it closes).
+  transitions: {
+    tops: { in: "assets/to_tops.mp4", back: "assets/to_tops_back.mp4" },
+    especiales: { in: "assets/to_tops.mp4", back: "assets/to_tops_back.mp4" },
+    bottoms: { in: "assets/to_bottoms.mp4", back: "assets/to_bottoms_back.mp4" }
+  },
+  transitionRate: 1.35,     // play the 4 s camera moves a bit faster
   // Phones show this horizontal slice of the room art (Nily + racks + pool table) without swiping.
   // Phones: the full-screen room drifts slowly between Nily and the racks (art x of the screen centre).
   mobilePan: [1380, 1990],
