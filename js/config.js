@@ -44,7 +44,7 @@ window.LCLAV = {
       anchor: [2070, 690] },
     { id: "nily", label: "Hablar con Nily", key: "E", open: "nily",
       points: "1295,700 1350,688 1420,718 1432,830 1500,870 1540,1080 1660,1090 1730,1380 1650,1425 1450,1432 1350,1300 1280,1400 1200,1300 1170,1100 1120,1000 1180,880 1300,830",
-      anchor: [1360, 640] },
+      anchor: [1230, 560] },    // above-left of her head: never on her face, whatever pose she is in
     { id: "billar", label: "Billar", key: "8", open: "billar",
       points: "770,990 800,910 1100,900 1125,960 1105,1000 1120,1180 840,1270 790,1200",
       anchor: [930, 1080] },

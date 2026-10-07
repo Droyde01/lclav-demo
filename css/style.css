@@ -162,12 +162,18 @@ kbd {
 .room-loop { opacity: 0; }
 /* neon: the lights breathe and the sign flickers like a tube */
 .neon { position: absolute; inset: 0; pointer-events: none; transition: opacity .3s; }
-.neon img { mix-blend-mode: screen; opacity: 0; will-change: opacity; }
+.neon img, .neon .n-ceiling { mix-blend-mode: screen; opacity: 0; will-change: opacity; }
+/* the purple LED wash along the ceiling: a soft painted glow, not a cut-out of the frame */
+.neon .n-ceiling {
+  background:
+    radial-gradient(42% 22% at 44% 0%, rgba(170, 70, 255, .55), transparent 70%),
+    radial-gradient(22% 40% at 74% 8%, rgba(150, 60, 255, .35), transparent 70%);
+}
 .pin.room-mode .neon .n-ceiling { animation: nBreathe 5.5s ease-in-out infinite; }
 .pin.room-mode .neon .n-lamp { animation: nLamp 7s ease-in-out infinite 1.3s; }
 .pin.room-mode .neon .n-sign { animation: nTube 7.5s linear infinite; }
-@keyframes nBreathe { 0%, 100% { opacity: .1; } 50% { opacity: .6; } }
-@keyframes nLamp { 0%, 100% { opacity: .08; } 50% { opacity: .42; } }
+@keyframes nBreathe { 0%, 100% { opacity: .15; } 50% { opacity: .7; } }
+@keyframes nLamp { 0%, 100% { opacity: .05; } 50% { opacity: .25; } }
 @keyframes nTube {
   0% { opacity: .7; } 2% { opacity: .12; } 2.6% { opacity: .78; } 4% { opacity: .2; } 4.8% { opacity: .82; }
   38% { opacity: .72; } 39% { opacity: .3; } 39.6% { opacity: .78; }
