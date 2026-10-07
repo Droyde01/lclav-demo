@@ -34,27 +34,37 @@
     } catch (e) { console.warn("entry manifest missing", e); }
     if (!list.length) list = ["assets/door.webp"];
 
+    // coarse pass first (every 8th frame) so the door is ready fast; the rest streams in after
+    const order = [];
+    for (const step of [8, 4, 2, 1]) for (let i = 0; i < list.length; i += step) if (!order.includes(i)) order.push(i);
+    if (!order.includes(list.length - 1)) order.splice(1, 0, list.length - 1);
+    const coarse = order.filter((i) => i % 8 === 0 || i === list.length - 1);
+    frames = new Array(list.length);
     let done = 0;
-    const total = list.length + 1;
+    const total = coarse.length + 1;
     const tick = () => {
-      const p = Math.round((++done / total) * 100);
+      const p = Math.min(100, Math.round((++done / total) * 100));
       $("#ldNum").textContent = String(p).padStart(3, "0");
       $("#ldBar").style.width = p + "%";
     };
-    const load = (src) => new Promise((res) => {
+    const load = (i) => new Promise((res) => {
       const img = new Image(); img.decoding = "async";
-      img.onload = img.onerror = () => { tick(); res(img); };
-      img.src = src;
+      img.onload = () => { frames[i] = img; res(); };
+      img.onerror = () => res();
+      img.src = list[i];
     });
-    const posterReady = new Promise((res) => { if (poster.complete) { tick(); res(); } else { poster.onload = poster.onerror = () => { tick(); res(); }; } });
-    frames = await Promise.all(list.map(load));
-    await posterReady;
+    const posterReady = new Promise((res) => { if (poster.complete) res(); else { poster.onload = poster.onerror = () => res(); } });
+    await Promise.all(coarse.map((i) => load(i).then(tick)));
+    await posterReady; tick();
     clearInterval(tipTimer);
     fit();
-    await new Promise((r) => setTimeout(r, 350));
+    await new Promise((r) => setTimeout(r, 300));
     $("#loader").classList.add("is-out");
     document.body.classList.remove("is-loading");
     enterBtn.disabled = false;
+    // fill in the remaining frames, a few at a time
+    const rest = order.filter((i) => !coarse.includes(i));
+    (async () => { for (let k = 0; k < rest.length; k += 6) await Promise.all(rest.slice(k, k + 6).map(load)); })();
     introAnim();
   }
 
@@ -66,29 +76,15 @@
     lastFrame = -1; draw(true);
     layoutRoom();
   }
-  // phones: the room is a "game screen" under the nav showing Nily, the racks and the pool table
-  let phoneMap = null;
-  function layoutRoom() {
-    const st = document.documentElement.style;
-    if (isPhone()) {
-      const [x0, x1] = C.mobileRoomX, W = innerWidth, top = 66;
-      const H = Math.round(Math.min(ART_H * W / (x1 - x0), innerHeight - top - 290));
-      const s = H / ART_H, w = Math.round(ART_W * s), left = Math.round(W / 2 - ((x0 + x1) / 2) * s);
-      st.setProperty("--room-top", top + "px"); st.setProperty("--room-h", H + "px");
-      st.setProperty("--room-w", w + "px"); st.setProperty("--room-x", left + "px");
-      phoneMap = { top, s, left };
-    } else {
-      ["--room-top", "--room-h", "--room-w", "--room-x"].forEach((v) => st.removeProperty(v));
-      phoneMap = null;
-    }
-    placeBlips();
-  }
+  function layoutRoom() { placeBlips(); clampPan(); }
   function draw(force) {
     if (!frames.length) return;
     const i = Math.min(frames.length - 1, Math.round(Math.min(1, progress / SEQ_END) * (frames.length - 1)));
     if (i === lastFrame && !force) return;
-    const img = frames[i]; if (!img || !img.naturalWidth) return;
-    lastFrame = i;
+    let img = frames[i];
+    for (let d = 1; !img && d < frames.length; d++) img = frames[i - d] || frames[i + d];   // nearest loaded
+    if (!img) return;
+    lastFrame = frames[i] ? i : -1;
     const cw = canvas.width, ch = canvas.height;
     const s = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
     const w = img.naturalWidth * s, h = img.naturalHeight * s;
@@ -120,14 +116,15 @@
       if (sp > a && sp < b) o = Math.min(1, (sp - a) / 0.05, (b - sp) / 0.05);
       el.style.opacity = o; el.style.transform = `translateY(${(1 - o) * 20}px)`;
     });
+    if (p > 0.25) preloadRoom();
     const want = p >= SEQ_END - 0.004;
     if (want !== inRoom) want ? enterRoom() : leaveRoom();
   }
-  const easeIO = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
   function scrollToRoom(duration) {
     const intro = $("#intro");
     const y = intro.offsetTop + (intro.offsetHeight - innerHeight) * SEQ_END + 2;
-    if (lenis) lenis.scrollTo(y, { duration, easing: easeIO }); else window.scrollTo({ top: y, behavior: "smooth" });
+    preloadRoom();
+    if (lenis) lenis.scrollTo(y, { duration, easing: (t) => -(Math.cos(Math.PI * t) - 1) / 2 }); else window.scrollTo({ top: y, behavior: "smooth" });
   }
   function scrollToTop() {
     closeAllLayers();
@@ -145,7 +142,7 @@
     room.classList.add("is-on");
     pin.classList.add("room-mode");
     playRoom();
-    if (isPhone()) flipIn();
+    look.cx = ART_W / 2; clampPan(); startDrift();
     if (!enterRoom.greeted) {
       enterRoom.greeted = true;
       pin.classList.add("room-intro");
@@ -158,38 +155,25 @@
     room.classList.remove("is-on");
     pin.classList.remove("room-mode");
     vids.forEach((v) => v.pause());
+    stopDrift();
     dialog.hidden = true; promptEl.hidden = true;
-    gsap.killTweensOf([cam, canvas]);
     gsap.set(cam, { clearProps: "transform" });
-    gsap.set(canvas, { clearProps: "opacity" });
-    room.style.overflow = "";
-  }
-
-  // phones: the full-screen last frame "pulls back" into the game-screen framing
-  function flipIn() {
-    if (!phoneMap) return;
-    const W = innerWidth, k = pin.clientHeight / ART_H;           // canvas maps art at full height, centred
-    const S = k / phoneMap.s;
-    const tx = -(ART_W / 2) * k + W / 2 - S * phoneMap.left;
-    const ty = -phoneMap.top;
-    room.style.overflow = "visible";
-    pin.classList.add("is-flipping");
-    gsap.fromTo(cam, { x: tx, y: ty, scale: S }, {
-      x: 0, y: 0, scale: 1, duration: 1.3, ease: "power3.inOut", delay: .1,
-      onComplete: () => { room.style.overflow = ""; pin.classList.remove("is-flipping"); }
-    });
-    gsap.to(canvas, { opacity: 0, duration: .9, delay: .2 });
   }
 
   // two stacked videos crossfade into each other so clips chain (smoke → chill → smoke …) with no seam
   let front = 0, clipIdx = 0, switching = false;
   const clips = C.roomClips || [];
+  function preloadRoom() {
+    if (preloadRoom.done || !clips.length) return;
+    preloadRoom.done = true;
+    vids[0].src = clips[0]; vids[0].preload = "auto"; vids[0].load();
+  }
   function playRoom() {
     if (!clips.length) return;
     if (!playRoom.started) {
       playRoom.started = true;
       vids.forEach((v) => v.addEventListener("timeupdate", () => maybeSwitch(v)));
-      vids[0].src = clips[0];
+      if (!preloadRoom.done) { preloadRoom.done = true; vids[0].src = clips[0]; }
       vids[0].play().then(() => vids[0].classList.add("is-front")).catch(() => {});
       preloadNext();
     } else vids[front].play().catch(() => {});
@@ -248,6 +232,53 @@
     $$(".blip").forEach((b) => { const p = artToBox(+b.dataset.x, +b.dataset.y); b.style.left = p.x + "px"; b.style.top = p.y + "px"; });
   }
 
+  // phones: the full-screen room is wider than the screen; the camera drifts and can be dragged
+  const look = { cx: ART_W / 2 };            // art x at the centre of the screen
+  let drift = null, resumeT = 0;
+  function panScale() { return pan.clientHeight / ART_H; }
+  function clampPan() {
+    if (!isPhone()) { pan.style.removeProperty("--pan"); return; }
+    const s = panScale(), half = innerWidth / 2 / s;
+    look.cx = Math.max(half, Math.min(ART_W - half, look.cx));
+    pan.style.setProperty("--pan", ((ART_W / 2 - look.cx) * s).toFixed(1) + "px");
+  }
+  function startDrift(delay = 2.4) {
+    if (!isPhone() || !inRoom) return;
+    if (drift) drift.kill();
+    const [a, b] = C.mobilePan;
+    const to = Math.abs(look.cx - a) < Math.abs(look.cx - b) ? b : a;
+    drift = gsap.timeline({ delay, repeat: -1, yoyo: true, onUpdate: clampPan })
+      .to(look, { cx: to, duration: 7, ease: "sine.inOut", onUpdate: clampPan })
+      .to(look, { cx: to, duration: 2.5 });  // hold a moment at each end
+  }
+  function stopDrift() { if (drift) { drift.kill(); drift = null; } }
+  (() => {
+    let sx = 0, sy = 0, startCx = 0, dragging = false, moved = false;
+    room.addEventListener("pointerdown", (e) => { if (!isPhone()) return; sx = e.clientX; sy = e.clientY; startCx = look.cx; dragging = true; moved = false; });
+    room.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (!moved && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) { moved = true; stopDrift(); }
+      if (moved) { look.cx = startCx - dx / panScale(); clampPan(); }
+    });
+    const end = () => {
+      if (!dragging) return; dragging = false;
+      if (moved) { clearTimeout(resumeT); resumeT = setTimeout(() => startDrift(0), 4000); }
+    };
+    window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
+    room.addEventListener("click", (e) => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+  })();
+  // keep every label inside the screen: hide the ones that drift off, flip the ones near the right edge
+  gsap.ticker.add(() => {
+    if (!isPhone() || !inRoom) return;
+    const W = innerWidth;
+    $$(".blip").forEach((b) => {
+      const r = b.querySelector(".bd").getBoundingClientRect(), x = r.left + r.width / 2;
+      b.classList.toggle("is-off", x < 26 || x > W - 26);
+      b.classList.toggle("is-left", x > W * 0.55);
+    });
+  });
+
   // "go into" a rack: the camera pushes in on it before the shop opens
   let dived = false;
   function dive(h) {
@@ -260,6 +291,7 @@
     const tx = (isPhone() ? r.width / 2 : r.width * 0.19) - S * ax;
     const ty = r.height / 2 - S * ay;
     dived = true;
+    stopDrift();
     pin.classList.add("is-diving");
     dialog.hidden = true; promptEl.hidden = true;
     return new Promise((res) => gsap.to(cam, { x: tx, y: ty, scale: S, duration: .85, ease: "power3.inOut", onComplete: res }));
@@ -268,7 +300,7 @@
     if (!dived) return;
     dived = false;
     pin.classList.remove("is-diving");
-    gsap.to(cam, { x: 0, y: 0, scale: 1, duration: .8, ease: "power3.inOut" });
+    gsap.to(cam, { x: 0, y: 0, scale: 1, duration: .8, ease: "power3.inOut", onComplete: () => startDrift(1.5) });
   }
 
   /* ============================================================ Nily */

@@ -168,7 +168,7 @@ kbd {
 .room-vid.is-front { opacity: 1; }
 .pin.is-diving .room-pan { filter: brightness(.5) saturate(1.1); }
 #blips, #hud .hud-loc { transition: opacity .3s; }
-.pin.is-diving #blips, .pin.is-diving .hud-loc, .pin.is-diving .ctrl, .pin.is-flipping #blips { opacity: 0 !important; }
+.pin.is-diving #blips, .pin.is-diving .hud-loc, .pin.is-diving .room-hint { opacity: 0 !important; }
 #hotspots { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hs { fill: rgba(255, 61, 154, 0); stroke: rgba(255, 255, 255, 0); stroke-width: 4; cursor: pointer; outline: none; transition: fill .3s, stroke .3s; }
 .hs:focus-visible { stroke: rgba(255, 255, 255, .6); stroke-dasharray: 10 10; }   /* keyboard users still see the zone */
@@ -295,8 +295,8 @@ kbd {
   font-weight: 600; font-size: 14px; animation: fadeUp .25s var(--ease); pointer-events: none;
 }
 
-/* ================= PHONE CONTROLLER (mobile room) ================= */
-.ctrl { display: none; }
+/* ================= PHONE-ONLY BITS ================= */
+.explora, .room-hint { display: none; }
 
 /* ================= STORE (online shop) ================= */
 .store { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; pointer-events: none; }
@@ -425,28 +425,33 @@ kbd {
   .be-arrow { width: 34px; height: 34px; }
   .phase { font-size: 48px; }
 
-  /* the room becomes a "game screen" under the nav: Nily, racks and pool table all in view */
-  #room { top: var(--room-top, 70px); bottom: auto; height: var(--room-h, 50vh); overflow: hidden; }
-  .room-pan { left: var(--room-x, 0px); right: auto; width: var(--room-w, 100%); }
+  /* the room is full screen; the camera drifts between Nily and the racks (and follows a drag) */
+  .room-pan { left: 50%; right: auto; width: calc(100svh * 16 / 9); transform: translateX(calc(-50% + var(--pan, 0px))); }
+  #room { touch-action: pan-y; }
+  .blip { transition: opacity .25s; }
+  .blip.is-off { opacity: 0; }
   .blip .bl { padding: 6px 9px 6px 6px; font-size: 10px; letter-spacing: .08em; }
   .blip .bl kbd { display: none; }
   .blip .bd { width: 12px; height: 12px; }
-
-  /* the controller fills the rest of the screen */
-  .ctrl {
-    position: absolute; left: 0; right: 0; bottom: 0; top: calc(var(--room-top, 70px) + var(--room-h, 50vh));
-    display: flex; flex-direction: column; justify-content: flex-start; gap: 12px;
-    padding: 16px 16px max(16px, env(safe-area-inset-bottom));
-    background: linear-gradient(180deg, rgba(7,6,10,0), #07060a 22%);
-    opacity: 0; visibility: hidden; transform: translateY(20px);
-    transition: opacity .5s var(--ease) .5s, transform .6s var(--ease) .5s, visibility 0s linear 1.1s;
+  .room-hint {
+    position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: center; gap: 6px;
+    padding: 60px 16px max(18px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, transparent, rgba(7, 6, 10, .75));
+    font: 700 12px/1 var(--ui); letter-spacing: .2em; text-transform: uppercase; pointer-events: none;
+    opacity: 0; transition: opacity .6s .6s;
   }
-  .pin.room-mode .ctrl { opacity: 1; visibility: visible; transform: none; transition: opacity .5s var(--ease) .7s, transform .6s var(--ease) .7s; }
-  .ctrl-line { margin: 0; font-size: 15px; line-height: 1.45; }
-  .ctrl-line b { display: block; margin-bottom: 4px; font: 700 11px/1 var(--ui); letter-spacing: .24em; text-transform: uppercase; color: var(--pink); }
+  .room-hint i { font-style: normal; font-weight: 600; letter-spacing: .14em; color: var(--mute); font-size: 11px; animation: nudge 1.8s ease-in-out infinite; }
+  @keyframes nudge { 50% { transform: translateY(4px); } }
+  .pin.room-mode .room-hint { opacity: 1; }
+
+  /* the room's menu sits right below the full-screen room */
+  .explora { display: block; padding: 26px 16px 34px; background: var(--bg); }
+  .ctrl { display: flex; flex-direction: column; gap: 14px; }
+  .ctrl-line { margin: 0; font-size: 16px; line-height: 1.45; }
+  .ctrl-line b { display: block; margin-bottom: 6px; font: 700 11px/1 var(--ui); letter-spacing: .24em; text-transform: uppercase; color: var(--pink); }
   .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .ctrl-grid button {
-    display: flex; align-items: center; gap: 12px; height: 58px; padding: 0 16px; border-radius: 16px;
+    display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 16px; border-radius: 16px;
     background: rgba(255,255,255,.07); border: 1px solid var(--line); font: 700 16px/1 var(--ui);
   }
   .ctrl-grid button:active { background: rgba(255, 61, 154, .25); }

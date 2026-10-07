@@ -13,8 +13,9 @@ window.LCLAV = {
   // Add the "chill" clip (looks around, cleans her sandal) here when it's generated.
   roomClips: ["assets/room_smoke.mp4"],
   // Phones show this horizontal slice of the room art (Nily + racks + pool table) without swiping.
-  mobileRoomX: [860, 2300],
-  enterSeconds: 5.5,        // ENTER autoplay duration
+  // Phones: the full-screen room drifts slowly between Nily and the racks (art x of the screen centre).
+  mobilePan: [1380, 1990],
+  enterSeconds: 11,         // ENTER autoplay duration (Diego: slower)
 
   loaderTips: [
     "Toca los percheros de arriba para ver los tops.",
@@ -43,9 +44,6 @@ window.LCLAV = {
       anchor: [930, 1080] },
     { id: "nota", label: "Deja una nota", key: "M", open: "pedido",
       points: "380,80 760,80 770,1380 470,1430 380,1300",
-      anchor: [570, 640] },
-    { id: "salir", label: "Salir", key: "⇧", open: "top",
-      points: "2420,0 2752,0 2752,1536 2420,1536",
-      anchor: [2580, 900] }
+      anchor: [570, 640] }
   ]
 };

@@ -100,7 +100,7 @@
         <p class="phase" data-from=".82" data-to=".97"><i>03</i> El cuarto</p>
       </div>
 
-      <!-- in-room HUD: desktop shows GTA prompts + keys; phones get the controller below the room -->
+      <!-- in-room HUD: desktop shows GTA prompts + keys; phones get the explora section below the room -->
       <div id="hud" aria-live="polite">
         <div class="hud-loc"><i>03</i><span>El cuarto</span><em>L' Clav · Miami</em></div>
         <div id="prompt" class="prompt" hidden><kbd>E</kbd><span></span></div>
@@ -113,7 +113,13 @@
         </div>
       </div>
 
-      <div id="ctrl" class="ctrl" aria-label="Controles del cuarto">
+      <div class="room-hint" aria-hidden="true"><span>Toca la ropa</span><i>↓ desliza para más</i></div>
+    </div>
+  </section>
+
+  <!-- ============ EXPLORA (phones: the room's menu, right after the full-screen room) ============ -->
+  <section id="explora" class="explora">
+    <div id="ctrl" class="ctrl" aria-label="Qué quieres ver">
         <p class="ctrl-line"><b>Nily</b><span id="ctrlLine">Hey, bienvenid@ a L' Clav. Toca la ropa o escoge aquí.</span></p>
         <div class="ctrl-grid">
           <button data-open="tops"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 8 32 14 42 8 56 16 50 28 44 25V56H20V25L14 28 8 16Z"/></svg>Tops</button>
@@ -123,7 +129,6 @@
         </div>
         <button class="ctrl-more" data-open="pedido">¿Buscas algo específico? <u>Pídeselo a Nily</u></button>
       </div>
-    </div>
   </section>
 
   <!-- ============ NILY ============ -->
