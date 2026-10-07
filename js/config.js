@@ -9,9 +9,8 @@ window.LCLAV = {
   // Entry frames (door → hallway → room). Mobile gets its own set when it exists.
   entryManifest: "assets/entry/manifest.json",
   entryManifestMobile: "assets/entry_m/manifest.json",
-  // Nily's loop (smoke once → chill → back to the base pose) is a cropped, CSS-masked video over the still room.
-  nilyLoop: "assets/nily_loop.mp4",
-  nilyBox: {"x": 592, "y": 52, "w": 756, "h": 1028},   // in the 1920x1080 frame
+  // Room loop (smoke once → chill → back to the start), full frame, crossfaded at the loop point.
+  roomLoop: "assets/room_loop.mp4",
   // Camera moves into a rack before its shop opens (and back out when it closes).
   transitions: {
     tops: { in: "assets/to_tops.mp4", back: "assets/to_tops_back.mp4" },
@@ -21,7 +20,7 @@ window.LCLAV = {
   transitionRate: 1.35,     // play the 4 s camera moves a bit faster
   // Phones show this horizontal slice of the room art (Nily + racks + pool table) without swiping.
   // Phones: the full-screen room drifts slowly between Nily and the racks (art x of the screen centre).
-  mobilePan: [1380, 1990],
+  mobilePan: [1400, 1990],
   enterSeconds: 11,         // ENTER autoplay duration (Diego: slower)
 
   loaderTips: [

@@ -65,15 +65,14 @@
       <div id="room" aria-label="El cuarto de L' Clav">
         <div class="room-cam">
           <div class="room-pan">
-            <!-- the room is a still; only Nily's box is video (CSS-masked), the neon is CSS-animated -->
+            <!-- poster = the loop's first frame; the loop is full-frame, every clip held in one image space; neon is CSS -->
             <div class="room-stage">
               <img id="roomPoster" class="stage-fill" src="assets/room.webp" alt="Nily sentada en la esquina de L' Clav, con la ropa a la derecha">
-              <video class="nily-box" muted playsinline preload="none" aria-hidden="true"></video>
-              <video class="nily-box" muted playsinline preload="none" aria-hidden="true"></video>
+              <video class="stage-fill room-loop" muted playsinline preload="none" aria-hidden="true"></video>
+              <video class="stage-fill room-loop" muted playsinline preload="none" aria-hidden="true"></video>
               <div class="neon" aria-hidden="true">
                 <img class="stage-fill n-ceiling" src="assets/neon_ceiling.webp" alt="">
                 <img class="stage-fill n-lamp" src="assets/neon_lamp.webp" alt="">
-                <img class="stage-fill n-city" src="assets/neon_city.webp" alt="">
                 <img class="stage-fill n-sign" src="assets/neon_sign.webp" alt="">
               </div>
               <video class="stage-fill trans-vid" id="transIn" muted playsinline preload="none" aria-hidden="true"></video>
@@ -93,11 +92,6 @@
         <div class="hero-left">
           <p class="eyebrow">Miami · Ropa curada</p>
           <p class="hero-copy">Toca la puerta.<br>Te estábamos esperando.</p>
-        </div>
-        <div class="hero-right">
-          <div class="chip"><b>01</b><span>Tops</span></div>
-          <div class="chip"><b>02</b><span>Bottoms</span></div>
-          <div class="chip"><b>03</b><span>Piezas especiales</span></div>
         </div>
         <div class="hero-cta">
           <button id="enterBtn" class="btn-enter" disabled><span class="be-key">ENTER</span><span class="be-arrow">→</span></button>

@@ -14,7 +14,7 @@
 
   const pin = $(".pin"), canvas = $("#seq"), ctx = canvas.getContext("2d");
   const room = $("#room"), cam = $(".room-cam"), pan = $(".room-pan"), poster = $("#roomPoster");
-  const loops = $$(".nily-box"), stage = $(".room-stage");
+  const loops = $$(".room-loop"), stage = $(".room-stage");
   const FW = 1920, FH = 1080;            // the room still, the videos and the masks share this frame
   const enterBtn = $("#enterBtn"), hero = $("#hero");
   const store = $("#store"), bagEl = $("#bag"), phone = $("#phone");
@@ -84,10 +84,6 @@
     stage.style.setProperty("--st-x", (W - sw) / 2 + "px"); stage.style.setProperty("--st-y", (H - sh) / 2 + "px");
     clampPan();
   }
-  (() => {
-    const b = C.nilyBox;
-    loops.forEach((v) => Object.assign(v.style, { left: b.x / FW * 100 + "%", top: b.y / FH * 100 + "%", width: b.w / FW * 100 + "%", height: b.h / FH * 100 + "%" }));
-  })();
   function draw(force) {
     if (!frames.length) return;
     const i = Math.min(frames.length - 1, Math.round(Math.min(1, progress / SEQ_END) * (frames.length - 1)));
@@ -136,7 +132,7 @@
   }
   function introAnim() {
     gsap.from(".hero-title span", { yPercent: 30, opacity: 0, duration: 1.6, ease: "power4.out", stagger: .12, delay: .3 });
-    gsap.from([".hero-left", ".hero-right .chip", ".hero-cta"], { y: 30, opacity: 0, duration: 1.1, ease: "power3.out", stagger: .08, delay: .7 });
+    gsap.from([".hero-left", ".hero-cta"], { y: 30, opacity: 0, duration: 1.1, ease: "power3.out", stagger: .08, delay: .7 });
     gsap.from("#nav", { y: -30, opacity: 0, duration: 1, ease: "power3.out", delay: .5 });
   }
 
@@ -147,7 +143,7 @@
     pin.classList.add("room-mode");
     playRoom();
     preloadTransitions();
-    look.cx = ART_W / 2; clampPan(); startDrift();
+    look.cx = C.mobilePan[0]; clampPan(); startDrift(0.4);
     if (!enterRoom.greeted) {
       enterRoom.greeted = true;
       pin.classList.add("room-intro");
@@ -165,16 +161,15 @@
     gsap.set(cam, { clearProps: "transform" });
   }
 
-  // Nily's loop: a cropped video, masked over the still room. Its first and last ~0.7 s are the still pose, so at
-  // the loop point a second copy starts and fades in over those frames: the restart can't be seen (and Safari's
-  // own loop hiccup never happens).
+  // Room loop: at the loop point a second copy starts and crossfades in, so the restart can't be seen
+  // (and Safari's own loop hiccup never happens).
   let cur = 0, fading = false;
-  const XF = 0.55;
+  const XF = 0.8;
   function preloadRoom() {
-    if (preloadRoom.done || !C.nilyLoop) return;
+    if (preloadRoom.done || !C.roomLoop) return;
     preloadRoom.done = true;
     loops.forEach((v) => {
-      v.src = C.nilyLoop; v.preload = "auto"; v.load();
+      v.src = C.roomLoop; v.preload = "auto"; v.load();
       v.addEventListener("timeupdate", () => checkLoop(v));
     });
   }
@@ -298,7 +293,7 @@
 
   // phones: the full-screen room is wider than the screen; the camera drifts and can be dragged
   const look = { cx: ART_W / 2 };            // art x at the centre of the screen
-  let drift = null, resumeT = 0;
+  let resumeT = 0;
   function panScale() { return pan.clientHeight / ART_H; }
   function clampPan() {
     if (!isPhone()) { pan.style.removeProperty("--pan"); return; }
@@ -306,16 +301,31 @@
     look.cx = Math.max(half, Math.min(ART_W - half, look.cx));
     pan.style.setProperty("--pan", ((ART_W / 2 - look.cx) * s).toFixed(1) + "px");
   }
-  function startDrift(delay = 2.4) {
-    if (!isPhone() || !inRoom) return;
-    if (drift) drift.kill();
-    const [a, b] = C.mobilePan;
-    const to = Math.abs(look.cx - a) < Math.abs(look.cx - b) ? b : a;
-    drift = gsap.timeline({ delay, repeat: -1, yoyo: true, onUpdate: clampPan })
-      .to(look, { cx: to, duration: 7, ease: "sine.inOut", onUpdate: clampPan })
-      .to(look, { cx: to, duration: 2.5 });  // hold a moment at each end
+  // the camera follows the loop: on Nily while she smokes, over to the racks while she's still, back for the
+  // sandal moment. (loop time → art x of the screen centre)
+  const CAM = [[0, 0], [9.5, 0], [11.8, 1], [14, 1], [16, 0], [99, 0]];
+  let autoCam = false;
+  function camAt(t) {
+    for (let i = 1; i < CAM.length; i++) if (t <= CAM[i][0]) {
+      const [t0, a] = CAM[i - 1], [t1, b] = CAM[i], k = (t - t0) / (t1 - t0 || 1);
+      return a + (b - a) * (k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+    }
+    return 0;
   }
-  function stopDrift() { if (drift) { drift.kill(); drift = null; } }
+  function startDrift(delay = 0) {
+    if (!isPhone() || !inRoom) return;
+    clearTimeout(startDrift.t);
+    startDrift.t = setTimeout(() => { autoCam = true; }, delay * 1000);
+  }
+  gsap.ticker.add(() => {
+    if (!autoCam || !isPhone() || !inRoom) return;
+    const v = loops[cur]; if (!v || !v.duration) return;
+    const [a, b] = C.mobilePan;
+    const target = a + (b - a) * camAt(v.currentTime);
+    look.cx += (target - look.cx) * .08;
+    clampPan();
+  });
+  function stopDrift() { autoCam = false; clearTimeout(startDrift.t); }
   (() => {
     let sx = 0, sy = 0, startCx = 0, dragging = false, moved = false;
     room.addEventListener("pointerdown", (e) => { if (!isPhone()) return; sx = e.clientX; sy = e.clientY; startCx = look.cx; dragging = true; moved = false; });
