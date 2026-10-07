@@ -14,7 +14,8 @@
 
   const pin = $(".pin"), canvas = $("#seq"), ctx = canvas.getContext("2d");
   const room = $("#room"), cam = $(".room-cam"), pan = $(".room-pan"), poster = $("#roomPoster");
-  const vids = $$(".room-vid");
+  const loops = $$(".nily-box"), stage = $(".room-stage");
+  const FW = 1920, FH = 1080;            // the room still, the videos and the masks share this frame
   const enterBtn = $("#enterBtn"), hero = $("#hero");
   const store = $("#store"), bagEl = $("#bag"), phone = $("#phone");
   const dialog = $("#dialog"), promptEl = $("#prompt");
@@ -76,7 +77,17 @@
     lastFrame = -1; draw(true);
     layoutRoom();
   }
-  function layoutRoom() { placeBlips(); clampPan(); }
+  function layoutRoom() {
+    const W = pan.clientWidth, H = pan.clientHeight, s = Math.max(W / FW, H / FH);
+    const sw = FW * s, sh = FH * s;
+    stage.style.setProperty("--st-w", sw + "px"); stage.style.setProperty("--st-h", sh + "px");
+    stage.style.setProperty("--st-x", (W - sw) / 2 + "px"); stage.style.setProperty("--st-y", (H - sh) / 2 + "px");
+    clampPan();
+  }
+  (() => {
+    const b = C.nilyBox;
+    loops.forEach((v) => Object.assign(v.style, { left: b.x / FW * 100 + "%", top: b.y / FH * 100 + "%", width: b.w / FW * 100 + "%", height: b.h / FH * 100 + "%" }));
+  })();
   function draw(force) {
     if (!frames.length) return;
     const i = Math.min(frames.length - 1, Math.round(Math.min(1, progress / SEQ_END) * (frames.length - 1)));
@@ -109,13 +120,6 @@
     const h = Math.max(0, 1 - p / 0.035);
     hero.style.opacity = h;
     hero.style.visibility = h < 0.02 ? "hidden" : "visible";   // hidden hero must not catch taps
-    const sp = p / SEQ_END;
-    $$(".phase").forEach((el) => {
-      const a = +el.dataset.from, b = +el.dataset.to;
-      let o = 0;
-      if (sp > a && sp < b) o = Math.min(1, (sp - a) / 0.05, (b - sp) / 0.05);
-      el.style.opacity = o; el.style.transform = `translateY(${(1 - o) * 20}px)`;
-    });
     if (p > 0.25) preloadRoom();
     const want = p >= SEQ_END - 0.004;
     if (want !== inRoom) want ? enterRoom() : leaveRoom();
@@ -161,50 +165,40 @@
     gsap.set(cam, { clearProps: "transform" });
   }
 
-  // Room clips all start and end on the same frame (Nily's base pose), so the player cuts from one to the
-  // next on "ended": the old clip holds its last frame until the next one is actually playing.
-  let front = 0, clipIdx = 0;
-  const clips = C.roomClips || [];
+  // Nily's loop: a cropped video, masked over the still room. Its first and last ~0.7 s are the still pose, so at
+  // the loop point a second copy starts and fades in over those frames: the restart can't be seen (and Safari's
+  // own loop hiccup never happens).
+  let cur = 0, fading = false;
+  const XF = 0.55;
   function preloadRoom() {
-    if (preloadRoom.done || !clips.length) return;
+    if (preloadRoom.done || !C.nilyLoop) return;
     preloadRoom.done = true;
-    vids[0].src = clips[0]; vids[0].preload = "auto"; vids[0].load();
-    vids.forEach((v) => v.addEventListener("ended", () => { if (v === vids[front]) nextClip(); }));
-    if (clips.length === 1) vids[0].loop = true;
+    loops.forEach((v) => {
+      v.src = C.nilyLoop; v.preload = "auto"; v.load();
+      v.addEventListener("timeupdate", () => checkLoop(v));
+    });
   }
-  function preloadNext() {
-    if (clips.length < 2) return;
-    const nxt = vids[1 - front];
-    const src = clips[(clipIdx + 1) % clips.length];
-    if (!nxt.src.endsWith(src)) nxt.src = src;
-    nxt.preload = "auto"; nxt.load();
-  }
-  function nextClip() {
-    const cur = vids[front], nxt = vids[1 - front];
+  function checkLoop(v) {
+    if (v !== loops[cur] || fading || !v.duration || v.duration - v.currentTime > XF) return;
+    fading = true;
+    const nxt = loops[1 - cur];
     nxt.currentTime = 0;
     nxt.play().then(() => {
-      nxt.classList.add("is-front"); cur.classList.remove("is-front");
-      front = 1 - front; clipIdx = (clipIdx + 1) % clips.length;
-      preloadNext();
-    }).catch(() => {});
+      gsap.fromTo(nxt, { opacity: 0 }, { opacity: 1, duration: XF * .9, ease: "none", onComplete: () => {
+        v.pause(); gsap.set(v, { opacity: 0 }); cur = 1 - cur; fading = false;
+      } });
+    }).catch(() => { fading = false; });
   }
   function playRoom() {
-    if (!clips.length) return;
     preloadRoom();
-    const v = vids[front];
-    v.play().then(() => { v.classList.add("is-front"); if (!playRoom.next) { playRoom.next = true; preloadNext(); } }).catch(() => {});
+    const v = loops[cur];
+    v.play().then(() => { gsap.set(v, { opacity: 1 }); }).catch(() => {});
   }
-  function pauseRoom() { vids.forEach((v) => v.pause()); }
-  // back from a rack: restart the cycle from its first frame (= the base pose the camera lands on)
+  function pauseRoom() { loops.forEach((v) => v.pause()); }
   function restartRoom() {
-    vids.forEach((v) => v.classList.remove("is-front"));
-    front = 0; clipIdx = 0;
-    const v = vids[0];
-    if (!v.src.endsWith(clips[0])) v.src = clips[0];
-    v.currentTime = 0;
-    v.classList.add("is-front");
-    v.play().catch(() => {});
-    preloadNext();
+    gsap.killTweensOf(loops); fading = false;
+    gsap.set(loops[1 - cur], { opacity: 0 }); loops[1 - cur].pause();
+    const v = loops[cur]; v.currentTime = 0; gsap.set(v, { opacity: 1 }); v.play().catch(() => {});
   }
 
   // camera moves into a rack (real Seedance clips), then back out
@@ -282,7 +276,7 @@
       b.className = "blip" + (h.anchor[0] > ART_W * .66 ? " is-left" : "");
       b.id = "blip-" + h.id;
       b.innerHTML = `<span class="bd"></span><span class="bl"><kbd>${h.key}</kbd>${h.label}</span>`;
-      b.dataset.x = h.anchor[0]; b.dataset.y = h.anchor[1];
+      b.style.setProperty("--bx", h.anchor[0] / ART_W); b.style.setProperty("--by", h.anchor[1] / ART_H);
       blips.appendChild(b);
       const on = (v) => {
         b.classList.toggle("is-on", v);
@@ -300,9 +294,7 @@
       poly.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(h.open, h); } });
     });
   }
-  function placeBlips() {
-    $$(".blip").forEach((b) => { const p = artToBox(+b.dataset.x, +b.dataset.y); b.style.left = p.x + "px"; b.style.top = p.y + "px"; });
-  }
+
 
   // phones: the full-screen room is wider than the screen; the camera drifts and can be dragged
   const look = { cx: ART_W / 2 };            // art x at the centre of the screen

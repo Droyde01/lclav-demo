@@ -9,9 +9,9 @@ window.LCLAV = {
   // Entry frames (door → hallway → room). Mobile gets its own set when it exists.
   entryManifest: "assets/entry/manifest.json",
   entryManifestMobile: "assets/entry_m/manifest.json",
-  // Room clips play in order and crossfade into each other (each starts and ends on the same pose).
-  // Add the "chill" clip (looks around, cleans her sandal) here when it's generated.
-  roomClips: ["assets/room_smoke.mp4", "assets/room_chill.mp4"],
+  // Nily's loop (smoke once → chill → back to the base pose) is a cropped, CSS-masked video over the still room.
+  nilyLoop: "assets/nily_loop.mp4",
+  nilyBox: {"x": 592, "y": 52, "w": 756, "h": 1028},   // in the 1920x1080 frame
   // Camera moves into a rack before its shop opens (and back out when it closes).
   transitions: {
     tops: { in: "assets/to_tops.mp4", back: "assets/to_tops_back.mp4" },

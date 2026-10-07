@@ -65,13 +65,22 @@
       <div id="room" aria-label="El cuarto de L' Clav">
         <div class="room-cam">
           <div class="room-pan">
-            <img id="roomPoster" class="room-media" src="assets/room.webp" alt="Nily sentada en la esquina de L' Clav, con la ropa a la derecha">
-            <video class="room-media room-vid" muted playsinline preload="none" aria-hidden="true"></video>
-            <video class="room-media room-vid" muted playsinline preload="none" aria-hidden="true"></video>
-            <video class="room-media trans-vid" id="transIn" muted playsinline preload="none" aria-hidden="true"></video>
-            <video class="room-media trans-vid" id="transBack" muted playsinline preload="none" aria-hidden="true"></video>
-            <svg id="hotspots" viewBox="0 0 2752 1536" preserveAspectRatio="xMidYMid slice"></svg>
-            <div id="blips" aria-hidden="true"></div>
+            <!-- the room is a still; only Nily's box is video (CSS-masked), the neon is CSS-animated -->
+            <div class="room-stage">
+              <img id="roomPoster" class="stage-fill" src="assets/room.webp" alt="Nily sentada en la esquina de L' Clav, con la ropa a la derecha">
+              <video class="nily-box" muted playsinline preload="none" aria-hidden="true"></video>
+              <video class="nily-box" muted playsinline preload="none" aria-hidden="true"></video>
+              <div class="neon" aria-hidden="true">
+                <img class="stage-fill n-ceiling" src="assets/neon_ceiling.webp" alt="">
+                <img class="stage-fill n-lamp" src="assets/neon_lamp.webp" alt="">
+                <img class="stage-fill n-city" src="assets/neon_city.webp" alt="">
+                <img class="stage-fill n-sign" src="assets/neon_sign.webp" alt="">
+              </div>
+              <video class="stage-fill trans-vid" id="transIn" muted playsinline preload="none" aria-hidden="true"></video>
+              <video class="stage-fill trans-vid" id="transBack" muted playsinline preload="none" aria-hidden="true"></video>
+              <svg id="hotspots" viewBox="0 0 2752 1536" preserveAspectRatio="none"></svg>
+              <div id="blips" aria-hidden="true"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -96,15 +105,9 @@
         </div>
       </div>
 
-      <div id="phases" aria-hidden="true">
-        <p class="phase" data-from=".04" data-to=".38"><i>01</i> La puerta</p>
-        <p class="phase" data-from=".40" data-to=".80"><i>02</i> El pasillo</p>
-        <p class="phase" data-from=".82" data-to=".97"><i>03</i> El cuarto</p>
-      </div>
 
       <!-- in-room HUD: desktop shows GTA prompts + keys; phones get the explora section below the room -->
       <div id="hud" aria-live="polite">
-        <div class="hud-loc"><i>03</i><span>El cuarto</span><em>L' Clav · Miami</em></div>
         <div id="prompt" class="prompt" hidden><kbd>E</kbd><span></span></div>
         <div id="dialog" class="dialog" hidden>
           <p class="dl-line"><b>NILY:</b> <span id="dlText"></span></p>
