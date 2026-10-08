@@ -189,11 +189,13 @@
     loops.forEach((v) => {
       v.src = C.roomLoop; v.preload = "auto"; v.load();
       v.addEventListener("timeupdate", () => checkLoop(v));
+      v.addEventListener("playing", () => { if (v === loops[cur] && !fading) gsap.set(v, { opacity: 1 }); });
+      v.addEventListener("ended", () => ensureLoop());
     });
   }
   function checkLoop(v) {
     if (v !== loops[cur] || fading || !v.duration || v.duration - v.currentTime > XF) return;
-    fading = true;
+    fading = performance.now();
     const nxt = loops[1 - cur];
     nxt.currentTime = 0;
     nxt.play().then(() => {
@@ -208,6 +210,35 @@
     v.play().then(() => { gsap.set(v, { opacity: 1 }); }).catch(() => {});
   }
   function pauseRoom() { loops.forEach((v) => v.pause()); }
+  // Watchdog: the crossfade runs on animation frames, which stop in a background tab, and browsers pause video in
+  // frozen/background tabs or on a reload without a gesture. Whenever the room should be moving and isn't, restart it.
+  const roomShouldRun = () => inRoom && !inRack && !racking && document.visibilityState === "visible";
+  function ensureLoop(tick) {
+    if (!roomShouldRun() || !preloadRoom.done) return;
+    const v = loops[cur];
+    if (fading && performance.now() - fading > XF * 1000 + 1500) {          // crossfade never finished
+      gsap.killTweensOf(loops);
+      const nxt = loops[1 - cur];
+      gsap.set(nxt, { opacity: 1 }); v.pause(); gsap.set(v, { opacity: 0 }); cur = 1 - cur; fading = false;
+      return ensureLoop(tick);
+    }
+    if (fading) return;
+    if (v.ended || (v.duration && v.currentTime >= v.duration - .05)) return restartRoom();
+    if (v.paused) { ensureLoop.stall = 0; v.play().then(() => gsap.set(v, { opacity: 1 })).catch(() => {}); return; }
+    // "playing" but the clock doesn't move (decoder stuck after the tab was frozen): nudge it, then reload it.
+    // Counted on the 1 s tick only (one tap fires several events in the same instant).
+    if (tick !== true) return;
+    if (v.currentTime === ensureLoop.last && v.readyState >= 3) {          // (still buffering on a slow network is not a stall)
+      ensureLoop.stall = (ensureLoop.stall || 0) + 1;
+      if (ensureLoop.stall === 2) { v.currentTime = Math.max(0, v.currentTime - .04); v.play().catch(() => {}); }
+      if (ensureLoop.stall >= 4) { ensureLoop.stall = 0; v.load(); restartRoom(); }
+    } else ensureLoop.stall = 0;
+    ensureLoop.last = v.currentTime;
+  }
+  setInterval(() => ensureLoop(true), 1000);
+  ["visibilitychange", "pageshow", "focus"].forEach((ev) => window.addEventListener(ev, () => ensureLoop()));
+  // a touch counts as a gesture, which lets play() through where autoplay is blocked (iPhone Low Power Mode)
+  ["pointerdown", "touchstart", "keydown"].forEach((ev) => window.addEventListener(ev, () => ensureLoop(), { passive: true }));
   function restartRoom() {
     gsap.killTweensOf(loops); fading = false;
     gsap.set(loops[1 - cur], { opacity: 0 }); loops[1 - cur].pause();
@@ -216,7 +247,7 @@
 
   // camera moves into a rack (real Seedance clips), then back out
   const tIn = $("#transIn"), tBack = $("#transBack");
-  let inRack = null;
+  let inRack = null, racking = false;
   const warm = {};
   function preloadTransitions() {
     if (preloadTransitions.done || !C.transitions) return;
@@ -239,7 +270,7 @@
   async function rackIn(kind) {
     const t = C.transitions && C.transitions[kind];
     if (!t || !inRoom) return false;
-    inRack = kind; dived = true; stopDrift();
+    inRack = kind; racking = true; dived = true; stopDrift();
     dialog.hidden = true; promptEl.hidden = true;
     pin.classList.add("is-diving");
     if (isPhone()) gsap.to(look, { cx: ART_W / 2, duration: .5, ease: "power2.out", onUpdate: clampPan });
@@ -264,6 +295,7 @@
     tBack.classList.add("is-on"); tIn.classList.remove("is-on");
     gsap.to(tBack, { x: 0, duration: 1, ease: "power2.inOut" });
     await done;
+    racking = false;
     restartRoom();
     await new Promise((r) => setTimeout(r, 60));
     tBack.classList.remove("is-on");
@@ -470,7 +502,7 @@
   let cat = "tops", sizeFilter = "";
 
   async function getProducts() {
-    if (!products) products = await (await fetch("data/products.json?v=7")).json();
+    if (!products) products = await (await fetch("data/products.json?v=8")).json();
     return products;
   }
   async function openStore(kind, h) {
@@ -766,6 +798,7 @@
     knocking = true;
     enterBtn.classList.remove("is-knocking"); void enterBtn.offsetWidth; enterBtn.classList.add("is-knocking");
     preloadRoom();
+    loops.forEach((v) => { const pr = v.play(); v.pause(); if (pr) pr.catch(() => {}); });   // unlock video inside the tap (iOS Low Power Mode)
     setTimeout(() => { knocking = false; enterBtn.classList.remove("is-knocking"); scrollToRoom(C.enterSeconds); }, 520);
   }
   enterBtn.addEventListener("click", knock);
